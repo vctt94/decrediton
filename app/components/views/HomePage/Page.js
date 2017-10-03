@@ -20,7 +20,7 @@ const HomePage = ({
   rescanAttempt,
   isRequestingPassphrase,
   passphraseCallback,
-  hasTicketsToBeRevoked,
+  hasTicketsToRevoke,
   revokeTicketsSuccess,
   revokeTicketsError,
   passphraseHeading,
@@ -80,7 +80,7 @@ const HomePage = ({
         ) : (
           <div>
             <div className="page-content">
-            {hasTicketsToBeRevoked ? <div className="tickets-to-revoke-warning">
+            {hasTicketsToRevoke ? <div className="tickets-to-revoke-warning">
               You have outstanding missed or expired tickets, please revoke them to unlock your funds
               <KeyBlueButton
                 className="stakepool-content-revoke-button"
