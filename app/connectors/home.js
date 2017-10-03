@@ -10,7 +10,10 @@ const mapStateToProps = selectorMap({
   txPerPage: sel.txPerPage,
   spendableTotalBalance: sel.spendableTotalBalance,
   synced: sel.synced,
-  transactions: sel.homeHistoryTransactions
+  transactions: sel.homeHistoryTransactions,
+  revokeTicketsError: sel.revokeTicketsError,
+  revokeTicketsSuccess: sel.revokeTicketsSuccess,
+  hasTicketsToRevoke: sel.hasTicketsToRevoke
 });
 
 const mapDispatchToProps = dispatch => bindActionCreators({

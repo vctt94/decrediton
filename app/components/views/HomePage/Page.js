@@ -18,30 +18,22 @@ const HomePage = ({
   synced,
   spendableTotalBalance,
   rescanAttempt,
-  revokedTicketsCount,
-  onRequestPassphrase,
   isRequestingPassphrase,
   passphraseCallback,
+  hasTicketsToBeRevoked,
   revokeTicketsSuccess,
   revokeTicketsError,
   passphraseHeading,
   passphraseDescription,
   onCancelPassphraseRequest,
   onShowRevokeTicket,
-  expiredTicketsCount,
-  missedTicketsCount,
   rescanRequest,
   transactions,
   getTransactionsRequestAttempt,
   getAccountsResponse,
   onClearRevokeTicketsError,
   onClearRevokeTicketsSuccess,
-  ...props
-}) => {
-  console.log(revokeTicketsError)
-  console.log(revokeTicketsSuccess)
-  const ticketsToBeRevoked = revokedTicketsCount === (expiredTicketsCount+missedTicketsCount);
-  return (
+}) => (
   <div>
     <PassphraseModal
       hidden={!isRequestingPassphrase}
@@ -65,7 +57,7 @@ const HomePage = ({
               {revokeTicketsError}
             </div>
           ) : null,
-          revokeTicketsSuccess ? (
+            revokeTicketsSuccess ? (
             <div key="revokeTicketsSuccess" className="stakepool-view-notification-success">
               <div className="stakepool-content-nest-address-delete-icon" onClick={onClearRevokeTicketsSuccess}/>
               {revokeTicketsSuccess}
@@ -88,7 +80,7 @@ const HomePage = ({
         ) : (
           <div>
             <div className="page-content">
-            {ticketsToBeRevoked ? <div className="tickets-to-revoke-warning">
+            {hasTicketsToBeRevoked ? <div className="tickets-to-revoke-warning">
               You have outstanding missed or expired tickets, please revoke them to unlock your funds
               <KeyBlueButton
                 className="stakepool-content-revoke-button"
@@ -111,7 +103,7 @@ const HomePage = ({
       </div>
     </div>
   </div>
-  );};
+  );
 
 export default home(rescan(HomePage));
 

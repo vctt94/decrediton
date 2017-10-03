@@ -3,7 +3,6 @@ import { autobind } from "core-decorators";
 import ErrorScreen from "../../ErrorScreen";
 import HomePage from "./Page";
 import service from "../../../connectors/service";
-import stakeInfo from "../../../connectors/stakeInfo";
 import home from "../../../connectors/home";
 import {substruct} from "../../../fp.js";
 
@@ -42,10 +41,6 @@ class Home extends React.Component{
     }} /> : <ErrorScreen />;
   }
 
-  checkTicketsToBeRevoked(){
-    return this.props.revokedTicketsCount !== (this.props.expiredTicketsCount + this.props.missedTicketsCount);
-  }
-
   onRevokeTickets(privpass) {
     const { onRevokeTickets } = this.props;
     onRevokeTickets && onRevokeTickets(privpass);
@@ -76,4 +71,4 @@ class Home extends React.Component{
 
 }
 
-export default service(stakeInfo(home(Home)));
+export default service(home(Home));
