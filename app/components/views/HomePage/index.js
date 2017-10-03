@@ -1,10 +1,13 @@
 import React from "react";
+import { autobind } from "core-decorators";
 import ErrorScreen from "../../ErrorScreen";
 import HomePage from "./Page";
 import service from "../../../connectors/service";
 import stakeInfo from "../../../connectors/stakeInfo";
+import home from "../../../connectors/home";
 import {substruct} from "../../../fp.js";
 
+@autobind
 class Home extends React.Component{
   constructor(props) {
     super(props);
@@ -13,6 +16,7 @@ class Home extends React.Component{
 
   getInitialState() {
     return {
+      onCancelPassphraseRequest: null,
       passphraseHeading: null,
       passphraseDescription: null,
       passphraseCallback: null,
@@ -20,10 +24,16 @@ class Home extends React.Component{
     };
   }
 
+  componentWillMount() {
+    this.props.onClearRevokeTicketsSuccess();
+    this.props.onClearRevokeTicketsError();
+  }
+
   render() {
     return this.props.walletService ? <HomePage
     {...{
       ...this.props,
+      ...this.state,
       ...substruct({
         onShowRevokeTicket: null,
         onRequestPassphrase: null,
@@ -66,4 +76,4 @@ class Home extends React.Component{
 
 }
 
-export default stakeInfo(service(Home));
+export default service(stakeInfo(home(Home)));

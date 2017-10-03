@@ -1,6 +1,8 @@
 import { connect } from "react-redux";
+import { bindActionCreators } from "redux";
 import { selectorMap } from "../fp";
 import * as sel from "../selectors";
+import * as ca from "../actions/ControlActions";
 
 const mapStateToProps = selectorMap({
   getTransactionsRequestAttempt: sel.getTransactionsRequestAttempt,
@@ -11,4 +13,10 @@ const mapStateToProps = selectorMap({
   transactions: sel.homeHistoryTransactions
 });
 
-export default connect(mapStateToProps);
+const mapDispatchToProps = dispatch => bindActionCreators({
+  onRevokeTickets: ca.revokeTicketsAttempt,
+  onClearRevokeTicketsError: ca.clearRevokeTicketsError,
+  onClearRevokeTicketsSuccess: ca.clearRevokeTicketsSuccess,
+}, dispatch);
+
+export default connect(mapStateToProps,mapDispatchToProps);
