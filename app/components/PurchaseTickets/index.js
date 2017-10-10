@@ -10,6 +10,10 @@ class PurchaseTickets extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      isSubmited: false,
+      ticketFeeError: false,
+      txFeeError: false,
+      expiryError: false,
       isShowingAdvanced: false,
       numTicketsToBuy: 1,
       ticketFee: 0.001, // DCR/kB
@@ -29,7 +33,6 @@ class PurchaseTickets extends React.Component {
           stakePool: this.getStakePool(),
           account: this.getAccount(),
           formatMessage: this.props.intl.formatMessage,
-          ...this.getErrors(),
           ...substruct({
             onShowAdvanced: null,
             onHideAdvanced: null,
@@ -101,11 +104,12 @@ class PurchaseTickets extends React.Component {
 
   getIsValid() {
     if (!this.getCanAffordTickets()) return false;
-    if (Object.keys(this.getErrors()).length > 0) return false;
+    if (this.getErrors()) return false;
     return true;
   }
 
   onRequestPassphrase() {
+    this.setState({isSubmited: true});
     const { onRequestPassphrase } = this.props;
     if (!this.getIsValid()) return;
     onRequestPassphrase && onRequestPassphrase(
@@ -133,32 +137,33 @@ class PurchaseTickets extends React.Component {
   }
 
   onChangeTicketFee(ticketFee) {
-    this.setState({ ticketFee: ticketFee.replace(/[^\d.]/g, "") });
+    const ticketFeeError = (isNaN(ticketFee) || ticketFee <= 0 || ticketFee >= 1);
+    this.setState({
+      ticketFee: ticketFee.replace(/[^\d.]/g, ""),
+      ticketFeeError: ticketFeeError,
+    });
+
   }
 
   onChangeTxFee(txFee) {
-    this.setState({ txFee: txFee.replace(/[^\d.]/g, "") });
+    const txFeeError = (isNaN(txFee) || txFee <= 0 || txFee >= 1);
+    this.setState({
+      txFee: txFee.replace(/[^\d.]/g, ""),
+      txFeeError: txFeeError
+    });
   }
 
   onChangeExpiry(expiry) {
-    this.setState({ expiry: expiry.replace(/[^\d.]/g, "") });
+    const expiryError = (isNaN(expiry) || expiry < 0);
+    this.setState({
+      expiry: expiry.replace(/[^\d.]/g, ""),
+      expiryError: expiryError
+    });
   }
 
   getErrors() {
-    const { ticketFee, txFee, expiry } = this.state;
-    const errors = {
-      ticketFeeError: (isNaN(ticketFee) || ticketFee <= 0 || ticketFee >= 1)
-        ? <T id="purchaseTickets.errors.invalidTicketFee" m="*Invalid ticket fee (0 - 1 DCR/KB)" />
-        : null,
-      txFeeError: (isNaN(txFee) || txFee <= 0 || txFee >= 1)
-        ? <T id="purchaseTickets.invalidTxFee" m="*Invalid tx fee (0 - 1 DCR/KB)" />
-        : null,
-      expiryError: (isNaN(expiry) || expiry < 0)
-        ? <T id="puchaseTickets.invalidExpiry" m="*Invalid expiry (>= 0)" />
-        : null
-    };
-    Object.keys(errors).forEach(key => errors[key] ? null : delete errors[key]);
-    return errors;
+    const { ticketFeeError, txFeeError, expiryError } = this.state;
+    return ticketFeeError || txFeeError || expiryError;
   }
 }
 
