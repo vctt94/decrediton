@@ -5,7 +5,7 @@ import NumTicketsInput from "../NumTicketsInput";
 import ManagePoolsButton from "../ManagePoolsButton";
 import SelectStakePool from "../SelectStakePool";
 import KeyBlueButton from "../KeyBlueButton";
-import FeeInput from "../FeeInput";
+import DecredInput from "../DecredInput";
 import NumericInput from "../NumericInput";
 import PurchaseTicketsInfoButton from "../PurchaseTicketsInfoButton";
 import TicketsCogs from "../TicketsCogs";
@@ -154,26 +154,42 @@ const PurchaseTicketsForm = ({
           </div>
           <div className="stakepool-purchase-ticket-row">
             <div className="stakepool-purchase-ticket-row-thirds">
-              <FeeInput
-                required
-                placeholder={formatMessage(messages.ticketFeePlaceholder)}
-                invalidMessage={<T id="purchaseTickets.errors.invalidTicketFee" m="*Invalid ticket fee (0 - 1 DCR/KB)" />}
-                fee={ticketFee}
-                onChangeFee={e => onChangeTicketFee(e.target.value)}
-                showErrors={isSubmited}
-                invalid={ticketFeeError}
-              />
+              <div className="stakepool-purchase-ticket-label">
+                <T id="purchaseTickets.ticketFee" m="Ticket Fee (DCR/kB)" />
+                :</div>
+              <div className="stakepool-purchase-ticket-thirds-input">
+                <div className="stakepool-input-form-purchase-ticket">
+                  <DecredInput
+                    placeholder={formatMessage(messages.ticketFeePlaceholder)}
+                    value={ticketFee}
+                    onChange={e => onChangeTicketFee(e.target.value)}
+                    required
+                    invalid= {ticketFeeError}
+                    invalidMessage={<T id="purchaseTickets.errors.invalidTicketFee" m="*Invalid ticket fee (0 - 1 DCR/KB)" />}
+                    showErrors={isSubmited}
+                  />
+                </div>
+              </div>
             </div>
             <div className="stakepool-purchase-ticket-row-thirds">
-              <FeeInput
-                required
-                placeholder={formatMessage(messages.txFeePlaceholder)}
-                invalidMessage={<T id="purchaseTickets.invalidTxFee" m="*Invalid tx fee (0 - 1 DCR/KB)" />}
-                fee={txFee}
-                onChangeFee={e => onChangeTxFee(e.target.value)}
-                showErrors={isSubmited}
-                invalid={txFeeError}
-              />
+              <div className="stakepool-purchase-ticket-label">
+                <T id="purchaseTickets.txFee" m="Tx Fee (DCR/kB)" />:</div>
+              <div className="stakepool-purchase-ticket-thirds-input">
+                <div className="stakepool-input-form-purchase-ticket">
+                  <DecredInput
+                    placeholder={formatMessage(messages.txFeePlaceholder)}
+                    value={txFee}
+                    onChange={e => onChangeTxFee(e.target.value)}
+                    required
+                    invalid={txFeeError}
+                    invalidMessage={<T id="purchaseTickets.errors.invalidTxFee" m="*Invalid tx fee (0 - 1 DCR/KB)" />}
+                    showErrors={isSubmited}
+                  />
+                </div>
+              </div>
+              {txFeeError ? (
+                <div className="stakepool-purchase-ticket-input-error">{txFeeError}</div>
+              ) : null}
             </div>
             <div className="stakepool-purchase-ticket-row-thirds">
               <div className="stakepool-purchase-ticket-label">

@@ -2,7 +2,7 @@ import React from "react";
 import { autobind } from "core-decorators";
 import ticketAutoBuyer from "../../connectors/ticketAutoBuyer";
 import { substruct, compose, eq, get } from "../../fp";
-import {injectIntl} from "react-intl";
+import { injectIntl } from "react-intl";
 import TicketAutoBuyerForm from "./Form";
 
 @autobind
@@ -15,7 +15,11 @@ class TicketAutoBuyer extends React.Component {
   getInitialState() {
     return {
       ...this.getCurrentSettings(),
-      isHidingDetails: true
+      isHidingDetails: true,
+      balanceToMaintainError: false,
+      maxPriceAbsoluteError: false,
+      maxPriceRelativeError: false,
+      maxPerBlockError: false,
     };
   }
 
@@ -53,6 +57,13 @@ class TicketAutoBuyer extends React.Component {
     );
   }
 
+  getValueInAtoms(value) {
+    const { currencyDisplay } = this.props;
+    if (currencyDisplay === "DCR")
+      return value * 100000000;
+    return value;
+  }
+
   getCurrentSettings() {
     return substruct({
       balanceToMaintain: null,
@@ -86,19 +97,42 @@ class TicketAutoBuyer extends React.Component {
   }
 
   onChangeBalanceToMaintain(balanceToMaintain) {
-    this.setState({ balanceToMaintain: balanceToMaintain.replace(/[^\d.]/g, "") });
+    const balanceToMaintainInAtoms = this.getValueInAtoms(balanceToMaintain);
+
+    const balanceToMaintainError = (
+      isNaN(balanceToMaintainInAtoms) ||
+      balanceToMaintainInAtoms < 0 ||
+      balanceToMaintainInAtoms > this.props.account.spendable
+    );
+
+    this.setState({
+      balanceToMaintain: balanceToMaintain.replace(/[^\d.]/g, ""),
+      balanceToMaintainError: balanceToMaintainError
+    });
   }
 
   onChangeMaxFee(maxFee) {
-    this.setState({ maxFee: maxFee.replace(/[^\d.]/g, "") });
+    const maxFeeError = (isNaN(maxFee) || maxFee <= 0 || maxFee >= 1);
+    this.setState({
+      maxFee: maxFee.replace(/[^\d.]/g, ""),
+      maxFeeError: maxFeeError
+    });
   }
 
   onChangeMaxPriceAbsolute(maxPriceAbsolute) {
-    this.setState({ maxPriceAbsolute: maxPriceAbsolute.replace(/[^\d.]/g, "") });
+    const maxPriceAbsoluteError = (isNaN(maxPriceAbsolute) || maxPriceAbsolute < 0);
+    this.setState({
+      maxPriceAbsolute: maxPriceAbsolute.replace(/[^\d.]/g, ""),
+      maxPriceAbsoluteError: maxPriceAbsoluteError
+    });
   }
 
   onChangeMaxPriceRelative(maxPriceRelative) {
-    this.setState({ maxPriceRelative: maxPriceRelative.replace(/[^\d.]/g, "") });
+    const maxPriceRelativeError = (isNaN(maxPriceRelative) || maxPriceRelative < 0);
+    this.setState({
+      maxPriceRelative: maxPriceRelative.replace(/[^\d.]/g, ""),
+      maxPriceRelativeError: maxPriceRelativeError
+    });
   }
 
   onChangeMaxPerBlock(maxPerBlock) {
