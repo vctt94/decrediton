@@ -2,6 +2,7 @@ import React from "react";
 import TicketsCogs from "../TicketsCogs";
 import AutoBuyerSwitch from "../AutoBuyerSwitch";
 import KeyBlueButton from "../KeyBlueButton";
+import PurchaseTicketsInfoButton from "../PurchaseTicketsInfoButton";
 import NumericInput from "../NumericInput";
 import DecredInput from "../DecredInput";
 import { defineMessages, FormattedMessage as T } from "react-intl";
@@ -53,13 +54,19 @@ const TicketAutoBuyerForm = ({
   onChangeMaxPerBlock,
   onUpdateTicketAutoBuyerConfig,
   onToggleTicketAutoBuyer,
-  onToggleShowDetails
+  onToggleShowDetails,
+  onShowAutoBuyerTicketsInfo,
+  canNotEnableAutobuyer
 }) => {
   return (
     <div>
       <div className="stakepool-voting-title-area">
         <div className="stakepool-voting-title-area-name">
           <T id="autobuyer.title" m="Automatic Purchase" /></div>
+          <div className="stakepool-auto-buyer-show-advanced-area">
+            <PurchaseTicketsInfoButton onClick={onShowAutoBuyerTicketsInfo} />
+            <TicketsCogs opened={isHidingDetails} onClick={onToggleShowDetails} />
+          </div>
       </div>
       <div className={isHidingDetails ? "stakepool-flex-height-auto-buyer-hidden" : "stakepool-flex-height-auto-buyer-shown"}>
         <div className="stakepool-auto-buyer-row">
@@ -81,11 +88,12 @@ const TicketAutoBuyerForm = ({
               </div>
             ) : null}
           </div>
-          <div className="stakepool-auto-buyer-show-advanced-area">
-            <TicketsCogs opened={isHidingDetails} onClick={onToggleShowDetails} />
-          </div>
         </div>
         <div hidden={isHidingDetails ? true : false} className="stakepool-auto-buyer-advanced-area">
+          {canNotEnableAutobuyer ?
+            <div className="orange-warning">
+              <T id="autobuyer.canNotEnableAutobuyer" m="*Please fix fields with errors" />
+            </div> : null}
           <div className="stakepool-purchase-ticket-row">
             <div className="stakepool-purchase-ticket-row-left">
               <div className="stakepool-auto-buyer-icon-areas-expand"><div className="stakepool-balance-to-maintain-icon">

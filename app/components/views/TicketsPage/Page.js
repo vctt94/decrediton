@@ -2,6 +2,7 @@ import React from "react";
 import ReactToolTip from "react-tooltip";
 import StakeyBounce from "../../StakeyBounce";
 import PurchaseTicketsInfo from "../../PurchaseTicketsInfo";
+import TicketAutoBuyerInfo from "../../TicketAutoBuyerInfo";
 import VotingPrefs from "../../VotingPrefs";
 import StakePools from "../../StakePools";
 import TicketsPageHeader from "./Header";
@@ -19,6 +20,8 @@ const TicketsPage = ({
   onToggleTicketStakePool,
   onHideTicketsInfo,
   onHideStakePoolConfig,
+  isShowingAutoBuyerTicketsInfo,
+  onHideAutoBuyerTicketsInfo,
   ...props
 }) => (
   <div className="page-view">
@@ -31,7 +34,8 @@ const TicketsPage = ({
           ? <VotingPrefs />
           : isShowingTicketsInfo
             ? <PurchaseTicketsInfo closeModal={onHideTicketsInfo} />
-            : <Tickets {...{ stakePool, ...props }} />
+              : isShowingAutoBuyerTicketsInfo ? <TicketAutoBuyerInfo closeModal={onHideAutoBuyerTicketsInfo} />
+                : <Tickets {...{ stakePool, ...props }} />
     }
     <ReactToolTip type="info" effect="solid"/>
   </div>

@@ -16,10 +16,12 @@ class TicketAutoBuyer extends React.Component {
     return {
       ...this.getCurrentSettings(),
       isHidingDetails: true,
+      canNotEnableAutobuyer: false,
       balanceToMaintainError: false,
+      maxFeeError: false,
       maxPriceAbsoluteError: false,
       maxPriceRelativeError: false,
-      maxPerBlockError: false,
+      maxPerBlockError: false
     };
   }
 
@@ -29,7 +31,6 @@ class TicketAutoBuyer extends React.Component {
         {...{
           isTicketAutoBuyerConfigDirty: this.getIsDirty(),
           formatMessage: this.props.intl.formatMessage,
-          ...this.getInputErrors(),
           ...this.props,
           ...this.state,
           ...substruct({
@@ -44,16 +45,6 @@ class TicketAutoBuyer extends React.Component {
           }, this)
         }}
       />
-    );
-  }
-
-  getInputErrors() {
-    return Object.keys(this.getCurrentSettings()).reduce(
-      (errors, key) =>
-        (isNaN(this.state[key]) || this.state[key] < 0)
-          ? { ...errors, [`${key}Error`]: "Please enter a valid value (> 0)" }
-          : errors,
-      {}
     );
   }
 
@@ -140,6 +131,8 @@ class TicketAutoBuyer extends React.Component {
   }
 
   onToggleTicketAutoBuyer() {
+    if(this.getErrors())
+      return;
     return this.props.isTicketAutoBuyerEnabled
       ? this.props.onDisableTicketAutoBuyer()
       : this.onRequestPassphrase();
@@ -181,6 +174,23 @@ class TicketAutoBuyer extends React.Component {
       this.state.maxPerBlock
     )) : null;
   }
+
+  getErrors() {
+    const {balanceToMaintainError, maxFeeError, maxPriceAbsoluteError, maxPriceRelativeError, maxPerBlockError } = this.state;
+
+    if(balanceToMaintainError || maxFeeError || maxPriceAbsoluteError || maxPriceRelativeError || maxPerBlockError){
+      this.setState({
+        canNotEnableAutobuyer: true
+      });
+      return true;
+    }
+
+    this.setState({
+      canNotEnableAutobuyer: false
+    });
+    return false;
+  }
+
 }
 
 export default ticketAutoBuyer(injectIntl(TicketAutoBuyer));
