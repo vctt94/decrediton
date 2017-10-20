@@ -165,7 +165,7 @@ const PurchaseTicketsForm = ({
                     onChange={e => onChangeTicketFee(e.target.value)}
                     required
                     invalid= {ticketFeeError}
-                    invalidMessage={<T id="purchaseTickets.errors.invalidTicketFee" m="*Invalid ticket fee (0 - 1 DCR/KB)" />}
+                    invalidMessage={<T id="purchaseTickets.errors.invalidTicketFee" m="*Invalid ticket fee (0 - 0.1 DCR/KB)" />}
                     showErrors={isSubmited}
                   />
                 </div>
@@ -182,14 +182,11 @@ const PurchaseTicketsForm = ({
                     onChange={e => onChangeTxFee(e.target.value)}
                     required
                     invalid={txFeeError}
-                    invalidMessage={<T id="purchaseTickets.errors.invalidTxFee" m="*Invalid tx fee (0 - 1 DCR/KB)" />}
+                    invalidMessage={<T id="purchaseTickets.errors.invalidTxFee" m="*Invalid tx fee (0 - 0.1 DCR/KB)" />}
                     showErrors={isSubmited}
                   />
                 </div>
               </div>
-              {txFeeError ? (
-                <div className="stakepool-purchase-ticket-input-error">{txFeeError}</div>
-              ) : null}
             </div>
             <div className="stakepool-purchase-ticket-row-thirds">
               <div className="stakepool-purchase-ticket-label">
@@ -203,6 +200,7 @@ const PurchaseTicketsForm = ({
                     required
                     submited={isSubmited}
                     invalid={expiryError}
+                    showErrors={isSubmited}
                   />
                 </div>
               </div>

@@ -45,7 +45,6 @@ const TicketAutoBuyerForm = ({
   balanceToMaintainError,
   maxPriceAbsoluteError,
   maxPriceRelativeError,
-  maxPerBlockError,
   formatMessage,
   onChangeBalanceToMaintain,
   onChangeMaxFee,
@@ -63,7 +62,7 @@ const TicketAutoBuyerForm = ({
       <div className="stakepool-voting-title-area">
         <div className="stakepool-voting-title-area-name">
           <T id="autobuyer.title" m="Automatic Purchase" /></div>
-          <div className="stakepool-auto-buyer-show-advanced-area">
+          <div className="stakepool-purchase-ticket-input-buttons">
             <PurchaseTicketsInfoButton onClick={onShowAutoBuyerTicketsInfo} />
             <TicketsCogs opened={isHidingDetails} onClick={onToggleShowDetails} />
           </div>
@@ -107,8 +106,9 @@ const TicketAutoBuyerForm = ({
                     onChange={e => onChangeBalanceToMaintain(e.target.value)}
                     invalid={balanceToMaintainError}
                     invalidMessage={<T id="autobuyer.balanceToMaintainError"
-                      m="Your balance to mantain can not be bigger then your Available Balance" />}
+                      m="Your balance to mantain is invalid" />}
                     showErrors
+                    required
                   />
                 </div>
               </div>
@@ -124,8 +124,9 @@ const TicketAutoBuyerForm = ({
                     value={maxFee}
                     onChange={e => onChangeMaxFee(e.target.value)}
                     invalid={maxFeeError}
-                    invalidMessage={<T id="autobuyer.invalidMaxFee" m="*Invalid max fee (0 - 1 DCR/KB)" />}
+                    invalidMessage={<T id="autobuyer.invalidMaxFee" m="*Invalid max fee (0 - 0.1 DCR/KB)" />}
                     showErrors
+                    required
                   />
                 </div>
               </div>
@@ -144,6 +145,7 @@ const TicketAutoBuyerForm = ({
                     onChange={e => onChangeMaxPriceAbsolute(e.target.value)}
                     invalid={maxPriceAbsoluteError}
                     showErrors
+                    required
                   />
                 </div>
               </div>
@@ -161,6 +163,7 @@ const TicketAutoBuyerForm = ({
                   unit="%"
                   invalid={maxPriceRelativeError}
                   showErrors
+                  required
                 />
               </div>
 
@@ -178,12 +181,10 @@ const TicketAutoBuyerForm = ({
                     value={maxPerBlock}
                     onChange={e => onChangeMaxPerBlock(e.target.value)}
                     showErrors
+                    required
                   />
                 </div>
               </div>
-              {maxPerBlockError ? (
-                <div className="stakepool-purchase-ticket-input-error">{maxPerBlockError}</div>
-              ) : null}
             </div>
           </div>
           <div hidden={!getTicketBuyerConfigResponse}>

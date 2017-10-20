@@ -92,9 +92,8 @@ class TicketAutoBuyer extends React.Component {
 
     const balanceToMaintainError = (
       isNaN(balanceToMaintainInAtoms) ||
-      balanceToMaintainInAtoms < 0 ||
-      balanceToMaintainInAtoms > this.props.account.spendable
-    );
+      balanceToMaintainInAtoms < 0
+    ) || !balanceToMaintain;
 
     this.setState({
       balanceToMaintain: balanceToMaintain.replace(/[^\d.]/g, ""),
@@ -103,7 +102,7 @@ class TicketAutoBuyer extends React.Component {
   }
 
   onChangeMaxFee(maxFee) {
-    const maxFeeError = (isNaN(maxFee) || maxFee <= 0 || maxFee >= 1);
+    const maxFeeError = (isNaN(maxFee) || maxFee <= 0 || maxFee >= 0.1) || !maxFee;
     this.setState({
       maxFee: maxFee.replace(/[^\d.]/g, ""),
       maxFeeError: maxFeeError
@@ -111,7 +110,7 @@ class TicketAutoBuyer extends React.Component {
   }
 
   onChangeMaxPriceAbsolute(maxPriceAbsolute) {
-    const maxPriceAbsoluteError = (isNaN(maxPriceAbsolute) || maxPriceAbsolute < 0);
+    const maxPriceAbsoluteError = (isNaN(maxPriceAbsolute) || maxPriceAbsolute < 0) || !maxPriceAbsolute;
     this.setState({
       maxPriceAbsolute: maxPriceAbsolute.replace(/[^\d.]/g, ""),
       maxPriceAbsoluteError: maxPriceAbsoluteError
@@ -119,7 +118,7 @@ class TicketAutoBuyer extends React.Component {
   }
 
   onChangeMaxPriceRelative(maxPriceRelative) {
-    const maxPriceRelativeError = (isNaN(maxPriceRelative) || maxPriceRelative < 0);
+    const maxPriceRelativeError = (isNaN(maxPriceRelative) || maxPriceRelative < 0) || !maxPriceRelative;
     this.setState({
       maxPriceRelative: maxPriceRelative.replace(/[^\d.]/g, ""),
       maxPriceRelativeError: maxPriceRelativeError
@@ -127,11 +126,15 @@ class TicketAutoBuyer extends React.Component {
   }
 
   onChangeMaxPerBlock(maxPerBlock) {
-    this.setState({ maxPerBlock: maxPerBlock.replace(/[^\d.]/g, "") });
+    const maxPerBlockError = !maxPerBlock;
+    this.setState({
+      maxPerBlock: maxPerBlock.replace(/[^\d.]/g, ""),
+      maxPerBlockError: maxPerBlockError
+    });
   }
 
   onToggleTicketAutoBuyer() {
-    if(this.getErrors())
+    if (this.getErrors())
       return;
     return this.props.isTicketAutoBuyerEnabled
       ? this.props.onDisableTicketAutoBuyer()
@@ -176,9 +179,9 @@ class TicketAutoBuyer extends React.Component {
   }
 
   getErrors() {
-    const {balanceToMaintainError, maxFeeError, maxPriceAbsoluteError, maxPriceRelativeError, maxPerBlockError } = this.state;
+    const { balanceToMaintainError, maxFeeError, maxPriceAbsoluteError, maxPriceRelativeError, maxPerBlockError } = this.state;
 
-    if(balanceToMaintainError || maxFeeError || maxPriceAbsoluteError || maxPriceRelativeError || maxPerBlockError){
+    if (balanceToMaintainError || maxFeeError || maxPriceAbsoluteError || maxPriceRelativeError || maxPerBlockError) {
       this.setState({
         canNotEnableAutobuyer: true
       });

@@ -26,7 +26,7 @@ const NumericInput = ({
         value={value}
         onChange={onChange}
       />
-      {unit ? <span className="right-balance-small">{unit}</span> : null}
+      {unit ? <div className="unit-area"><span className="right-balance-small">{unit}</span></div> : null}
       {showErrors ? (
         <div className="errors-area">
           {invalid && value ? (

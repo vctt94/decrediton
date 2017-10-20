@@ -5,6 +5,8 @@ import PurchaseTicketsForm from "./Form";
 import purchaseTickets from "../../connectors/purchaseTickets";
 import { injectIntl, FormattedMessage as T } from "react-intl";
 
+const MAX_POSSIBLE_FEE_INPUT = 0.1;
+
 @autobind
 class PurchaseTickets extends React.Component {
   constructor(props) {
@@ -137,7 +139,7 @@ class PurchaseTickets extends React.Component {
   }
 
   onChangeTicketFee(ticketFee) {
-    const ticketFeeError = (isNaN(ticketFee) || ticketFee <= 0 || ticketFee >= 1);
+    const ticketFeeError = (isNaN(ticketFee) || ticketFee <= 0 || ticketFee >= MAX_POSSIBLE_FEE_INPUT);
     this.setState({
       ticketFee: ticketFee.replace(/[^\d.]/g, ""),
       ticketFeeError: ticketFeeError,
@@ -146,7 +148,7 @@ class PurchaseTickets extends React.Component {
   }
 
   onChangeTxFee(txFee) {
-    const txFeeError = (isNaN(txFee) || txFee <= 0 || txFee >= 1);
+    const txFeeError = (isNaN(txFee) || txFee <= 0 || txFee >= MAX_POSSIBLE_FEE_INPUT);
     this.setState({
       txFee: txFee.replace(/[^\d.]/g, ""),
       txFeeError: txFeeError
