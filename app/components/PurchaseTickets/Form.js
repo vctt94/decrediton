@@ -102,7 +102,7 @@ const PurchaseTicketsForm = ({
     <div>
       <div className="stakepool-voting-title-area">
         <div className="stakepool-voting-title-area-name">
-          <T id="purchaseTickets.title" m="Purchase Titckets" /></div>
+          <T id="purchaseTickets.title" m="Purchase Tickets" /></div>
         <div className="stakepool-purchase-ticket-input-buttons">
           <PurchaseTicketsInfoButton onClick={onShowTicketsInfo} />
           <TicketsCogs opened={!isShowingAdvanced} onClick={onToggleShowAdvanced} />
@@ -164,7 +164,7 @@ const PurchaseTicketsForm = ({
                     value={ticketFee}
                     onChange={e => onChangeTicketFee(e.target.value)}
                     required
-                    invalid= {ticketFeeError}
+                    invalid={ticketFeeError}
                     invalidMessage={<T id="purchaseTickets.errors.invalidTicketFee" m="*Invalid ticket fee (0 - 0.1 DCR/KB)" />}
                     showErrors={isSubmited}
                   />
