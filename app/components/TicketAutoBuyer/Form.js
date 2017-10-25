@@ -99,26 +99,6 @@ const TicketAutoBuyerForm = ({
 
       </div>
       <div className={isHidingDetails ? "stakepool-flex-height-auto-buyer-hidden" : "stakepool-flex-height-auto-buyer-shown"}>
-        <div className="stakepool-auto-buyer-row">
-          <AutoBuyerSwitch enabled={isTicketAutoBuyerEnabled} onClick={onToggleTicketAutoBuyer} />
-          <div className="stakepool-auto-buyer-label">
-            {isTicketAutoBuyerEnabled
-              ? <T id="autobuyer.enabled" m="Enabled" />
-              : <T id="autobuyer.disabled" m="Disabled" />}
-          </div>
-          <div className="stakepool-auto-buyer-quick-bar-row">
-            {isHidingDetails ? (
-              <div>
-
-                <div data-tip={formatMessage(messages.balanceToMaintain)} className="stakepool-balance-to-maintain-icon" data-html={true}>{balanceToMaintain}</div>
-                <div data-tip={formatMessage(messages.maxFee)} className="stakepool-max-fee-icon">{maxFee} DCR</div>
-                <div data-tip={formatMessage(messages.maxPriceAbsolute)} className="stakepool-max-price-absolute-icon">{maxPriceAbsolute} DCR</div>
-                <div data-tip={formatMessage(messages.maxPriceRelative)} className="stakepool-max-price-relative-icon">{maxPriceRelative}%</div>
-                <div data-tip={formatMessage(messages.maxPerBlock)} className="stakepool-max-per-block-icon">{maxPerBlock}</div>
-              </div>
-            ) : null}
-          </div>
-        </div>
         <div hidden={isHidingDetails ? true : false} className="stakepool-auto-buyer-advanced-area">
           {canNotEnableAutobuyer ?
             <div className="orange-warning">
