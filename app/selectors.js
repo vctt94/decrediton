@@ -31,6 +31,7 @@ import {
   DCRDATA_URL_MAINNET
 } from "./middleware/dcrdataapi";
 import { isMixTx, dateToLocal, dateToUTC } from "./helpers";
+import { DCRDEX_API_URL_TESTNET } from "./middleware/dcrdexapi";
 import {
   MIN_RELAY_FEE,
   DCR,
@@ -1533,6 +1534,11 @@ export const politeiaURL = createSelector([isTestNet], (isTestNet) =>
 
 export const dcrdataURL = createSelector([isTestNet], (isTestNet) =>
   isTestNet ? DCRDATA_URL_TESTNET : DCRDATA_URL_MAINNET
+);
+
+export const dexURL = createSelector(
+  [ isTestNet ],
+  (isTestNet) => isTestNet ? DCRDEX_API_URL_TESTNET : ""
 );
 
 export const politeiaEnabled = compose(

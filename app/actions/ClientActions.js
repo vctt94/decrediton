@@ -41,6 +41,7 @@ import {
   VSP_FEE_PROCESS_PAID
 } from "constants";
 import * as cfgConstants from "constants/config";
+import { getUser, connectSocket } from "./DexActions";
 
 export const goToTransactionHistory = () => (dispatch) => {
   dispatch(pushHistory("/transactions/history"));

@@ -18,12 +18,14 @@ import {
 } from "../middleware/dcrdataapi";
 import * as cfgConstants from "constants/config";
 
+import { DCRDEX_API_URL_TESTNET } from "../middleware/dcrdexapi";
 export const EXTERNALREQUEST_NETWORK_STATUS = "EXTERNALREQUEST_NETWORK_STATUS";
 export const EXTERNALREQUEST_STAKEPOOL_LISTING =
   "EXTERNALREQUEST_STAKEPOOL_LISTING";
 export const EXTERNALREQUEST_UPDATE_CHECK = "EXTERNALREQUEST_UPDATE_CHECK";
 export const EXTERNALREQUEST_POLITEIA = "EXTERNALREQUEST_POLITEIA";
 export const EXTERNALREQUEST_DCRDATA = "EXTERNALREQUEST_DCRDATA";
+export const EXTERNALREQUEST_DCRDEX = "EXTERNALREQUEST_DCRDEX";
 export const EXTERNALREQUEST_TREZOR_BRIDGE = "EXTERNALREQUEST_TREZOR_BRIDGE";
 
 // These are the requests allowed when the standard privacy mode is selected.
@@ -129,6 +131,10 @@ export const allowExternalRequest = (externalReqType) => {
       break;
     case EXTERNALREQUEST_TREZOR_BRIDGE:
       addAllowedURL(/^http:\/\/127.0.0.1:21325\//);
+      break;
+    case EXTERNALREQUEST_DCRDEX:
+      addAllowedURL(DCRDEX_API_URL_TESTNET);
+      // addAllowedURL(DCRDEX_URL_MAINNET);
       break;
     default:
       logger.log("error", "Unknown external request type: " + externalReqType);
