@@ -1,10 +1,6 @@
 /* eslint-disable no-fallthrough */
 // we disable no-fallthrough rule in this file to simplify the select/case below.
-import * as wallet from "wallet";
 import { defineMessages } from "react-intl";
-import {
-  DECODERAWTXS_FAILED
-} from "../actions/DecodeMessageActions";
 import {
   PUBLISHTX_FAILED,
   SIGNTX_FAILED, CONSTRUCTTX_FAILED,
@@ -29,7 +25,6 @@ import {
 } from "../actions/StakePoolActions";
 import {
   ABANDONTRANSACTION_SUCCESS, ABANDONTRANSACTION_FAILED,
-  NEW_TRANSACTIONS_RECEIVED,
   GETSTARTUPWALLETINFO_FAILED,
   SEEDCOPIEDTOCLIPBOARD
 } from "../actions/ClientActions";
@@ -46,16 +41,18 @@ import {
   SPVSYNC_FAILED
 } from "actions/WalletLoaderActions";
 import {
-  TRZ_TOGGLEPINPROTECTION_SUCCESS, TRZ_TOGGLEPINPROTECTION_FAILED,
+  NEW_TRANSACTIONS_RECEIVED, TRANSACTION_TYPES
+} from "actions/TransactionActions";
+import {
   TRZ_TOGGLEPASSPHRASEPROTECTION_SUCCESS, TRZ_TOGGLEPASSPHRASEPROTECTION_FAILED,
+  TRZ_TOGGLEPINPROTECTION_SUCCESS, TRZ_TOGGLEPINPROTECTION_FAILED,
   TRZ_CHANGEHOMESCREEN_SUCCESS, TRZ_CHANGEHOMESCREEN_FAILED,
   TRZ_CHANGELABEL_SUCCESS, TRZ_CHANGELABEL_FAILED,
   TRZ_WIPEDEVICE_SUCCESS, TRZ_WIPEDEVICE_FAILED,
   TRZ_RECOVERDEVICE_SUCCESS, TRZ_RECOVERDEVICE_FAILED,
   TRZ_INITDEVICE_SUCCESS, TRZ_INITDEVICE_FAILED,
   TRZ_UPDATEFIRMWARE_SUCCESS, TRZ_UPDATEFIRMWARE_FAILED,
-  TRZ_NOCONNECTEDDEVICE,
-  TRZ_GETWALLETCREATIONMASTERPUBKEY_FAILED
+  TRZ_NOCONNECTEDDEVICE, TRZ_GETWALLETCREATIONMASTERPUBKEY_FAILED
 } from "actions/TrezorActions";
 
 import {
@@ -192,10 +189,6 @@ const messages = defineMessages({
   CHANGEPASSPHRASE_FAILED: {
     id: "settings.errors.changePassphraseFailed",
     defaultMessage: "Update passphrase failed. Incorrect private passphrase, please try again."
-  },
-  DECODERAWTXS_FAILED: {
-    id: "decodeRawTx.errors.decodeFailed",
-    defaultMessage: "{originalError}"
   },
   DAEMONCONNECTING_TIMEOUT: {
     id: "daemonSyncingTimeout.errors",
@@ -407,7 +400,7 @@ export default function snackbar(state = {}, action) {
       break;
     }
 
-    type = tx.direction || wallet.TRANSACTION_TYPES[tx.type];
+    type = tx.direction || TRANSACTION_TYPES[tx.type];
     message = { ...tx, type };
     values = { message };
     break;
@@ -486,7 +479,6 @@ export default function snackbar(state = {}, action) {
   case REFRESHSTAKEPOOLPURCHASEINFORMATION_FAILED:
   case SETSTAKEPOOLVOTECHOICES_FAILED:
   case ADDCUSTOMSTAKEPOOL_FAILED:
-  case DECODERAWTXS_FAILED:
   case SIGNMESSAGE_FAILED:
   case VERIFYMESSAGE_FAILED:
   case GETSTARTUPWALLETINFO_FAILED:
