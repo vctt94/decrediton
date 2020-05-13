@@ -36,13 +36,16 @@ function Transaction({ intl }) {
   const goBack = () => dispatch(ca.goBackHistory());
   const abandonTransaction = () => dispatch(ca.abandonTransaction(txHash));
   const fetchMissingStakeTxData = () => dispatch(ta.fetchMissingStakeTxData());
-  const decodeRawTransactions = (hexTx) => dispatch(ta.decodeRawTransaction(hexTx));
+  const decodeRawTransactions = (hexTx) =>
+    dispatch(ta.decodeRawTransaction(hexTx));
   const tsDate = useSelector(sel.tsDate);
   const decodedTransactions = useSelector(sel.decodedTransactions);
   const transactions = useSelector(sel.regularTransactions);
   const viewedTransaction = transactions[txHash];
-  const [ viewedDecodedTx, setViewedDecodedTx ] = useState(decodedTransactions[txHash]);
-  const [ state, send ] = useMachine(fetchMachine, {
+  const [viewedDecodedTx, setViewedDecodedTx] = useState(
+    decodedTransactions[txHash]
+  );
+  const [state, send] = useMachine(fetchMachine, {
     actions: {
       initial: () => {
         if (!viewedTransaction) return send("REJECT");
@@ -52,20 +55,23 @@ function Transaction({ intl }) {
       load: () => {
         if (!viewedDecodedTx) {
           return decodeRawTransactions(viewedTransaction.rawTx)
-            .then(res => {
+            .then((res) => {
               setViewedDecodedTx(res);
               send({ type: "RESOLVE", data: res });
             })
-            .catch(error => {
+            .catch((error) => {
               console.log(error);
               send({ type: "REJECT", error });
             });
         }
         const { txType, ticketPrice, leaveTimestamp } = viewedTransaction;
-        if ((txType === "Ticket" && !ticketPrice) || (txType == "Vote" && !leaveTimestamp)) {
+        if (
+          (txType === "Ticket" && !ticketPrice) ||
+          (txType == "Vote" && !leaveTimestamp)
+        ) {
           fetchMissingStakeTxData(viewedTransaction)
             .then(() => send("RESOLVE"))
-            .catch(error => {
+            .catch((error) => {
               console.log(error);
               send({ type: "REJECT", error });
             });
@@ -74,16 +80,32 @@ function Transaction({ intl }) {
     }
   });
   const {
-    txType, txInputs, txAmount, txDirection, txTimestamp, ticketReward,
-    enterTimestamp, leaveTimestamp, ticketPrice
+    txType,
+    txInputs,
+    txAmount,
+    txDirection,
+    txTimestamp,
+    ticketReward,
+    enterTimestamp,
+    leaveTimestamp,
+    ticketPrice
   } = viewedTransaction;
   console.log(viewedTransaction);
   const isConfirmed = !!txTimestamp;
   // If it is a regular tx we use txDirection instead
-  const icon = txType === "Regular" ? headerIcons[txDirection] : headerIcons[txType];
+  const icon =
+    txType === "Regular" ? headerIcons[txDirection] : headerIcons[txType];
 
-  let title = txType !== "Regular" ? intl.formatMessage(messages[txType]) :
-    <Balance title bold amount={txDirection !== "in" ? -txAmount : txAmount} />;
+  let title =
+    txType !== "Regular" ? (
+      intl.formatMessage(messages[txType])
+    ) : (
+      <Balance
+        title
+        bold
+        amount={txDirection !== "in" ? -txAmount : txAmount}
+      />
+    );
   if (txType == "Ticket" && ticketReward) {
     title = title + ", Voted";
   }
@@ -93,65 +115,139 @@ function Transaction({ intl }) {
     sentFromAccount = txInputs.length > 0 ? txInputs[0].accountName : "";
   }
 
-  const backBtn =
+  const backBtn = (
     <SlateGrayButton onClick={() => goBack()} className="thin-button">
       <T id="txDetails.backBtn" m="Back" />
-    </SlateGrayButton>;
+    </SlateGrayButton>
+  );
 
   let subtitle = <div />;
 
   switch (txType) {
-  case "Ticket":
-  case "Vote":
-    subtitle =
+    case "Ticket":
+    case "Vote":
+      subtitle = (
         <div className="tx-details-subtitle">
-          {isConfirmed ?
+          {isConfirmed ? (
             <div className="tx-details-subtitle-pair">
-              <div className="tx-details-subtitle-sentfrom"><T id="txDetails.purchasedOn" m="Purchased On" /></div>
-              <div className="tx-details-subtitle-date">
-                <T id="txDetails.timestamp" m="{timestamp, date, medium} {timestamp, time, medium}" values={{ timestamp: tsDate(txType == "Vote" && enterTimestamp ? enterTimestamp : txTimestamp) }} />
+              <div className="tx-details-subtitle-sentfrom">
+                <T id="txDetails.purchasedOn" m="Purchased On" />
               </div>
-            </div> :
+              <div className="tx-details-subtitle-date">
+                <T
+                  id="txDetails.timestamp"
+                  m="{timestamp, date, medium} {timestamp, time, medium}"
+                  values={{
+                    timestamp: tsDate(
+                      txType == "Vote" && enterTimestamp
+                        ? enterTimestamp
+                        : txTimestamp
+                    )
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
             <div className="tx-details-subtitle-date">
               <T id="txDetails.unConfirmed" m="Unconfirmed" />
             </div>
-          }
-          {leaveTimestamp && <div className="tx-details-subtitle-pair"><div className="tx-details-subtitle-sentfrom"><T id="txDetails.votedOn" m="Voted On" /></div><div className="tx-details-subtitle-date"><T id="txDetails.timestamp" m="{timestamp, date, medium} {timestamp, time, medium}" values={{ timestamp: tsDate(leaveTimestamp) }} /></div></div>}
-          {ticketPrice && <div className="tx-details-subtitle-pair"><div className="tx-details-subtitle-sentfrom"><T id="txDetails.ticketCost" m="Ticket Cost" /></div><div className="tx-details-subtitle-account"><Balance amount={ticketPrice} /></div></div>}
-          {ticketReward && <div className="tx-details-subtitle-pair"><div className="tx-details-subtitle-sentfrom"><T id="txDetails.reward" m="Reward" /></div><div className="tx-details-subtitle-account"><Balance amount={ticketReward} /></div></div>}
-        </div>;
-    break;
-  default:
-    subtitle =
+          )}
+          {leaveTimestamp && (
+            <div className="tx-details-subtitle-pair">
+              <div className="tx-details-subtitle-sentfrom">
+                <T id="txDetails.votedOn" m="Voted On" />
+              </div>
+              <div className="tx-details-subtitle-date">
+                <T
+                  id="txDetails.timestamp"
+                  m="{timestamp, date, medium} {timestamp, time, medium}"
+                  values={{ timestamp: tsDate(leaveTimestamp) }}
+                />
+              </div>
+            </div>
+          )}
+          {ticketPrice && (
+            <div className="tx-details-subtitle-pair">
+              <div className="tx-details-subtitle-sentfrom">
+                <T id="txDetails.ticketCost" m="Ticket Cost" />
+              </div>
+              <div className="tx-details-subtitle-account">
+                <Balance amount={ticketPrice} />
+              </div>
+            </div>
+          )}
+          {ticketReward && (
+            <div className="tx-details-subtitle-pair">
+              <div className="tx-details-subtitle-sentfrom">
+                <T id="txDetails.reward" m="Reward" />
+              </div>
+              <div className="tx-details-subtitle-account">
+                <Balance amount={ticketReward} />
+              </div>
+            </div>
+          )}
+        </div>
+      );
+      break;
+    default:
+      subtitle = (
         <div className="tx-details-subtitle">
-          {txDirection == "out" ? <><div className="tx-details-subtitle-sentfrom"><T id="txDetails.sentFrom" m="Sent From" /></div><div className="tx-details-subtitle-account">{sentFromAccount}</div></> : <div />}
-          <div className="tx-details-subtitle-date">{isConfirmed ? <T id="txDetails.timestamp" m="{timestamp, date, medium} {timestamp, time, medium}" values={{ timestamp: tsDate(txTimestamp) }} /> : <T id="txDetails.unConfirmed" m="Unconfirmed" />}</div>
-        </div>;
+          {txDirection == "out" ? (
+            <>
+              <div className="tx-details-subtitle-sentfrom">
+                <T id="txDetails.sentFrom" m="Sent From" />
+              </div>
+              <div className="tx-details-subtitle-account">
+                {sentFromAccount}
+              </div>
+            </>
+          ) : (
+            <div />
+          )}
+          <div className="tx-details-subtitle-date">
+            {isConfirmed ? (
+              <T
+                id="txDetails.timestamp"
+                m="{timestamp, date, medium} {timestamp, time, medium}"
+                values={{ timestamp: tsDate(txTimestamp) }}
+              />
+            ) : (
+              <T id="txDetails.unConfirmed" m="Unconfirmed" />
+            )}
+          </div>
+        </div>
+      );
   }
 
-  const header =
+  const header = (
     <StandaloneHeader
       title={title}
       iconClassName={icon}
       description={subtitle}
       actionButton={backBtn}
-    />;
+    />
+  );
 
   const getStateComponent = () => {
     switch (state.value) {
-    case "idle":
-      return <></>;
-    case "loading":
-      return <DecredLoading center />;
-    case "success":
-      return <TransactionPage {...{
-        transactionDetails: viewedTransaction, decodedTransaction: viewedDecodedTx, abandonTransaction
-      }}
-      />;
-    case "failure":
-      return <p>Transaction not found</p>;
-    default:
-      return null;
+      case "idle":
+        return <></>;
+      case "loading":
+        return <DecredLoading center />;
+      case "success":
+        return (
+          <TransactionPage
+            {...{
+              transactionDetails: viewedTransaction,
+              decodedTransaction: viewedDecodedTx,
+              abandonTransaction
+            }}
+          />
+        );
+      case "failure":
+        return <p>Transaction not found</p>;
+      default:
+        return null;
     }
   };
 
@@ -160,7 +256,6 @@ function Transaction({ intl }) {
       {getStateComponent()}
     </StandalonePage>
   );
-
 }
 
 export default injectIntl(Transaction);

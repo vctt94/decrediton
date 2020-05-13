@@ -1,10 +1,6 @@
 import Promise from "promise";
 import * as client from "middleware/grpc/client";
-import {
-  reverseHash,
-  strHashToRaw,
-  rawToHex
-} from "../helpers/byteActions";
+import { reverseHash, strHashToRaw, rawToHex } from "../helpers/byteActions";
 import { extractPkScriptAddrs } from "helpers/scripts";
 import { Uint64LE } from "int64-buffer";
 import { CommittedTicketsRequest } from "middleware/walletrpc/api_pb";
@@ -268,7 +264,6 @@ export const getTransaction = (walletService, txHash) =>
     });
   });
 
-
 export const publishUnminedTransactions = log(
   (walletService) =>
     new Promise((resolve, reject) => {
@@ -372,8 +367,14 @@ export const decodeRawTransaction = (rawTx, chainParams) => {
         scriptLen = first;
     }
     output.script = rawTx.slice(position, position + scriptLen);
-    const decodedScript = extractPkScriptAddrs(output.version, output.script, chainParams);
-    output.addresses ? output.addresses.push(decodedScript) : output.addresses = [ decodedScript ];
+    const decodedScript = extractPkScriptAddrs(
+      output.version,
+      output.script,
+      chainParams
+    );
+    output.addresses
+      ? output.addresses.push(decodedScript)
+      : (output.addresses = [decodedScript]);
 
     position += scriptLen;
     tx.outputs.push(output);
@@ -394,9 +395,9 @@ export const decodeRawTransaction = (rawTx, chainParams) => {
 export const selializeNoWitnessEncode = (decodedTx) => {
   const { inputs, outputs } = decodedTx;
   const neededSize = calculateSerializeSize(decodedTx);
-  let rawEncodedTx = new Uint8Array(neededSize);
+  const rawEncodedTx = new Uint8Array(neededSize);
   let position = 0;
-  const version = decodedTx.version | 1 << 16;
+  const version = decodedTx.version | (1 << 16);
   rawEncodedTx.set(putUint32(version), position);
   position += 4;
   const inputCount = inputs.length;
@@ -404,7 +405,7 @@ export const selializeNoWitnessEncode = (decodedTx) => {
   rawEncodedTx.set(value, position);
   position += n;
 
-  inputs.forEach(input => {
+  inputs.forEach((input) => {
     position = writeTxInPrefix(input, rawEncodedTx, position);
   });
 
@@ -415,14 +416,13 @@ export const selializeNoWitnessEncode = (decodedTx) => {
   rawEncodedTx.set(value, position);
   position += n;
 
-  outputs.forEach( output => {
+  outputs.forEach((output) => {
     position = writeTxOut(output, rawEncodedTx, position);
   });
 
   rawEncodedTx.set(putUint32(decodedTx.lockTime), position);
   position += 4;
   rawEncodedTx.set(putUint32(decodedTx.expiry), position);
-
 
   const checksum = _blake256(Buffer.from(rawEncodedTx));
   return reverseHash(rawToHex(checksum));
@@ -433,14 +433,16 @@ function calculateSerializeSize(decodedTx) {
   // Version 4 bytes + LockTime 4 bytes + Expiry 4 bytes +
   // Serialized varint size for the number of transaction
   // inputs and outputs.
-  let n = 12 + VarIntSerializeSize(inputs.length) +
+  let n =
+    12 +
+    VarIntSerializeSize(inputs.length) +
     VarIntSerializeSize(outputs.length);
 
   inputs.forEach(() => {
     n += serializeSizePrefix();
   });
 
-  outputs.forEach(o => {
+  outputs.forEach((o) => {
     n += serializeSize(o);
   });
 
@@ -448,7 +450,7 @@ function calculateSerializeSize(decodedTx) {
 }
 // PutUint8 copies the provided uint8 into a buffer from the free list and
 // writes the resulting byte to the given writer.
-function putUint8 (data) {
+function putUint8(data) {
   const arr8 = new Uint8Array(1);
   arr8[0] = data & 0xff;
 
@@ -458,10 +460,10 @@ function putUint8 (data) {
 // PutUint16 serializes the provided uint16 using the given byte order into a
 // buffer from the free list and writes the resulting two bytes to the given
 // writer.
-function putUint16 (data) {
+function putUint16(data) {
   const arr8 = new Uint8Array(2);
   arr8[0] = data & 0xff;
-  arr8[1] = data >> 8 & 0xff;
+  arr8[1] = (data >> 8) & 0xff;
 
   return arr8;
 }
@@ -471,9 +473,9 @@ function putUint16 (data) {
 function putUint32(data) {
   const arr8 = new Uint8Array(4);
   arr8[0] = data & 0xff;
-  arr8[1] = data >> 8 & 0xff;
-  arr8[2] = data >> 16 & 0xff;
-  arr8[3] = data >> 24 & 0xff;
+  arr8[1] = (data >> 8) & 0xff;
+  arr8[2] = (data >> 16) & 0xff;
+  arr8[3] = (data >> 24) & 0xff;
 
   return arr8;
 }
@@ -494,19 +496,19 @@ function putUint64(data) {
   const x = parseInt(leftBits, 2);
 
   arr8[0] = data & 0xff;
-  arr8[1] = data >> 8 & 0xff;
-  arr8[2] = data >> 16 & 0xff;
-  arr8[3] = data >> 24 & 0xff;
-  arr8[4] = x >> 32 & 0xff;
-  arr8[5] = x >> 40 & 0xff;
-  arr8[6] = x >> 48 & 0xff;
-  arr8[7] = x >> 56 & 0xff;
+  arr8[1] = (data >> 8) & 0xff;
+  arr8[2] = (data >> 16) & 0xff;
+  arr8[3] = (data >> 24) & 0xff;
+  arr8[4] = (x >> 32) & 0xff;
+  arr8[5] = (x >> 40) & 0xff;
+  arr8[6] = (x >> 48) & 0xff;
+  arr8[7] = (x >> 56) & 0xff;
 
   return arr8;
 }
 
-const MaxUint16 = 1<<16 - 1;
-const MaxUint32 = 1<<32 - 1;
+const MaxUint16 = 1 << (16 - 1);
+const MaxUint32 = 1 << (32 - 1);
 
 // writeVarInt serializes val to w using a variable number of bytes depending
 // on its value.
@@ -564,7 +566,9 @@ function serializeSizePrefix() {
 function serializeSize(output) {
   // Value 8 bytes + Version 2 bytes + serialized varint size for
   // the length of PkScript + PkScript bytes.
-  return 8 + 2 + VarIntSerializeSize(output.script.length) + output.script.length;
+  return (
+    8 + 2 + VarIntSerializeSize(output.script.length) + output.script.length
+  );
 }
 
 // writeOutPoint encodes op to the Decred protocol encoding for an OutPoint
@@ -575,7 +579,7 @@ function writeOutPoint(input, arr8, position) {
   arr8.set(putUint32(input.outputIndex), position);
   position += 4;
   arr8.set(putUint8(input.outputTree), position);
-  return (position + 1);
+  return position + 1;
 }
 
 // writeTxInPrefixs encodes ti to the Decred protocol encoding for a transaction
@@ -583,7 +587,7 @@ function writeOutPoint(input, arr8, position) {
 function writeTxInPrefix(input, arr8, position) {
   position = writeOutPoint(input, arr8, position);
   arr8.set(putUint32(input.sequence), position);
-  return (position + 4);
+  return position + 4;
 }
 
 // writeTxOut encodes to into the Decred protocol encoding for a transaction
@@ -601,5 +605,5 @@ function writeTxOut(output, arr8, position) {
   position += n;
 
   arr8.set(output.script, position);
-  return (position + output.script.length);
+  return position + output.script.length;
 }

@@ -10,7 +10,10 @@ import { spring, TransitionMotion } from "react-motion";
 import {
   TRANSACTION_DIR_SENT,
   TRANSACTION_DIR_RECEIVED,
-  TRANSACTION_DIR_TRANSFERRED
+  TRANSACTION_DIR_TRANSFERRED,
+  TICKET,
+  VOTE,
+  REVOCATION
 } from "constants/Decrediton";
 import "style/Snackbar.less";
 
@@ -19,17 +22,18 @@ const propTypes = {
   onDismissAllMessages: PropTypes.func.isRequired
 };
 
-const snackbarClasses = ({ type }) => ({
-  [TICKET]: "snackbar snackbar-stake",
-  [VOTE]: "snackbar snackbar-stake",
-  [REVOCATION]: "snackbar snackbar-stake",
-  [TRANSACTION_DIR_RECEIVED]: "snackbar snackbar-receive",
-  [TRANSACTION_DIR_SENT]: "snackbar snackbar-send",
-  [TRANSACTION_DIR_TRANSFERRED]: "snackbar snackbar-transfer",
-  "Warning": "snackbar snackbar-warning",
-  "Error": "snackbar snackbar-error",
-  "Success": "snackbar snackbar-success"
-})[type] || "snackbar";
+const snackbarClasses = ({ type }) =>
+  ({
+    [TICKET]: "snackbar snackbar-stake",
+    [VOTE]: "snackbar snackbar-stake",
+    [REVOCATION]: "snackbar snackbar-stake",
+    [TRANSACTION_DIR_RECEIVED]: "snackbar snackbar-receive",
+    [TRANSACTION_DIR_SENT]: "snackbar snackbar-send",
+    [TRANSACTION_DIR_TRANSFERRED]: "snackbar snackbar-transfer",
+    Warning: "snackbar snackbar-warning",
+    Error: "snackbar snackbar-error",
+    Success: "snackbar snackbar-success"
+  }[type] || "snackbar");
 
 @autobind
 class Snackbar extends React.Component {

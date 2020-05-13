@@ -7,7 +7,9 @@ import {
   TRANSACTION_DIR_SENT,
   TRANSACTION_DIR_RECEIVED,
   TRANSACTION_DIR_TRANSFERRED,
-  TICKET, VOTE, REVOCATION
+  TICKET,
+  VOTE,
+  REVOCATION
 } from "constants/Decrediton";
 import "style/Header.less";
 

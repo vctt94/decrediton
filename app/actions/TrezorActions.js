@@ -4,7 +4,13 @@ import * as wallet from "wallet";
 import * as selectors from "selectors";
 import fs from "fs";
 import { rawToHex, hexToRaw, str2utf8hex, hex2b64 } from "helpers";
-import { walletTxToBtcjsTx, walletTxToRefTx, WALLET_ACCOUNT, accountPath, addressPath } from "helpers/trezor";
+import {
+  walletTxToBtcjsTx,
+  walletTxToRefTx,
+  WALLET_ACCOUNT,
+  accountPath,
+  addressPath
+} from "helpers/trezor";
 import { publishTransactionAttempt } from "./ControlActions";
 import { model1_decred_homescreen, messages } from "constants/trezor";
 import { getWalletCfg } from "config";
@@ -345,7 +351,7 @@ export const signTransactionAttemptTrezor = (
   dispatch({ type: SIGNTX_ATTEMPT });
 
   const {
-    grpc: { decodeMessageService, walletService },
+    grpc: { walletService },
     trezor: { debug }
   } = getState();
   const chainParams = selectors.chainParams(getState());
@@ -361,26 +367,47 @@ export const signTransactionAttemptTrezor = (
   try {
     const changeIndex = constructTxResponse.getChangeIndex();
 
-    const decodedUnsigTxResp = wallet.decodeRawTransaction(Buffer.from(rawUnsigTx), chainParams);
-    const unsignedTx = await dispatch(getAmountFromTxInputs(decodedUnsigTxResp));
+    const decodedUnsigTxResp = wallet.decodeRawTransaction(
+      Buffer.from(rawUnsigTx),
+      chainParams
+    );
+    const unsignedTx = await dispatch(
+      getAmountFromTxInputs(decodedUnsigTxResp)
+    );
     const txCompletedInputs = await dispatch(getAmountFromTxInputs(unsignedTx));
     const inputTxs = await dispatch(getTxFromInputs(unsignedTx));
     const { inputs, outputs } = await walletTxToBtcjsTx(
-      walletService, chainParams, txCompletedInputs, inputTxs, changeIndex
+      walletService,
+      chainParams,
+      txCompletedInputs,
+      inputTxs,
+      changeIndex
     );
 
-    const refTxs = await Promise.all(inputTxs.map(async (inpTx) => {
-      const completeTx = await dispatch(getAmountFromTxInputs(inpTx));
-      return walletTxToRefTx(walletService, completeTx);
-    }));
+    const refTxs = await Promise.all(
+      inputTxs.map(async (inpTx) => {
+        const completeTx = await dispatch(getAmountFromTxInputs(inpTx));
+        return walletTxToRefTx(walletService, completeTx);
+      })
+    );
 
-    const signedRaw = await deviceRun(dispatch, getState, device, async session => {
-      await dispatch(checkTrezorIsDcrwallet(session));
+    const signedRaw = await deviceRun(
+      dispatch,
+      getState,
+      device,
+      async (session) => {
+        await dispatch(checkTrezorIsDcrwallet(session));
 
-      const signedResp = await session.signTx(inputs, outputs,
-        refTxs, chainParams.trezorCoinName, 0);
-      return signedResp.message.serialized.serialized_tx;
-    });
+        const signedResp = await session.signTx(
+          inputs,
+          outputs,
+          refTxs,
+          chainParams.trezorCoinName,
+          0
+        );
+        return signedResp.message.serialized.serialized_tx;
+      }
+    );
 
     dispatch({ type: SIGNTX_SUCCESS });
     dispatch(publishTransactionAttempt(hexToRaw(signedRaw)));
@@ -444,7 +471,8 @@ export const signMessageAttemptTrezor = (address, message) => async (
   }
 };
 
-export const TRZ_TOGGLEPINPROTECTION_ATTEMPT = "TRZ_TOGGLEPINPROTECTION_ATTEMPT";
+export const TRZ_TOGGLEPINPROTECTION_ATTEMPT =
+  "TRZ_TOGGLEPINPROTECTION_ATTEMPT";
 export const TRZ_TOGGLEPINPROTECTION_FAILED = "TRZ_TOGGLEPINPROTECTION_FAILED";
 export const TRZ_TOGGLEPINPROTECTION_SUCCESS =
   "TRZ_TOGGLEPINPROTECTION_SUCCESS";

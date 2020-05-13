@@ -1,5 +1,10 @@
 import {
-  TESTNET, MAINNET, STEcdsaSecp256k1, STEd25519, STSchnorrSecp256k1, ripemd160Size
+  TESTNET,
+  MAINNET,
+  STEcdsaSecp256k1,
+  STEd25519,
+  STSchnorrSecp256k1,
+  ripemd160Size
 } from "constants";
 const bs58 = require("bs58");
 
@@ -36,7 +41,8 @@ export const ERR_INVALID_ADDR_CHECKSUM = "ERR_INVALID_ADDR_CHECKSUM";
 // _blake256x2 gets a buffer and calculate its checksum twice with blake256.
 const _blake256x2 = (buffer) => _blake256(_blake256(buffer));
 
-export const _blake256 = (buffer) => createBlakeHash("blake256").update(buffer).digest();
+export const _blake256 = (buffer) =>
+  createBlakeHash("blake256").update(buffer).digest();
 
 export function isValidAddress(addr, network) {
   if (!addr || !addr.trim().length) return ERR_INVALID_ADDR_EMPTY;
@@ -83,13 +89,12 @@ const checksum = (input) => {
 // checkEncode prepends two version bytes and appends a four byte checksum.
 const checkEncode = (input, version) => {
   let b = Buffer.from(version);
-  b = Buffer.concat([ b, input ]);
+  b = Buffer.concat([b, input]);
   const calculatedChecksum = checksum(b);
-  b = Buffer.concat([ b, calculatedChecksum ]);
+  b = Buffer.concat([b, calculatedChecksum]);
 
   return bs58.encode(b);
 };
-
 
 // NewAddressPubKeyHash returns a new AddressPubKeyHash.  pkHash must
 // be 20 bytes.
@@ -99,17 +104,17 @@ export function newAddressPubKeyHash(pkHash, net, algo) {
   // Ensure the provided signature algo is supported.
   let addrID;
   switch (algo) {
-  case STEcdsaSecp256k1:
-    addrID = net.PubKeyHashAddrID;
-    break;
-  case STEd25519:
-    addrID = net.PKHEdwardsAddrID;
-    break;
-  case STSchnorrSecp256k1:
-    addrID = net.PKHSchnorrAddrID;
-    break;
-  default:
-    return { error: "unknown signature algorithm" };
+    case STEcdsaSecp256k1:
+      addrID = net.PubKeyHashAddrID;
+      break;
+    case STEd25519:
+      addrID = net.PKHEdwardsAddrID;
+      break;
+    case STSchnorrSecp256k1:
+      addrID = net.PKHSchnorrAddrID;
+      break;
+    default:
+      return { error: "unknown signature algorithm" };
   }
 
   // Ensure the provided pubkey hash length is valid.
@@ -122,4 +127,3 @@ export function newAddressPubKeyHash(pkHash, net, algo) {
   // base58.CheckEncode(hash160[:ripemd160.Size], netID
   return checkEncode(pkHash.slice(0, 20), addrID);
 }
-

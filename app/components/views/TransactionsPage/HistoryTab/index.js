@@ -147,7 +147,7 @@ class History extends React.Component {
   getTransactions() {
     const { transactions } = this.props;
     if (!transactions) return [];
-    return Object.keys(transactions).map(hash => transactions[hash]);
+    return Object.keys(transactions).map((hash) => transactions[hash]);
   }
 
   onChangeFilter(value) {

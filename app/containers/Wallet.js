@@ -67,8 +67,14 @@ class Wallet extends React.Component {
             <Route path="/trezor" component={TrezorPage} />
             <Route path="/ln" component={LNPage} />
           </MainSwitch>
-          <Route path="/transaction/history/:txHash" component={TransactionPage} />
-          <Route path="/proposal/details/:token" component={ProposalDetailsPage}/>
+          <Route
+            path="/transaction/history/:txHash"
+            component={TransactionPage}
+          />
+          <Route
+            path="/proposal/details/:token"
+            component={ProposalDetailsPage}
+          />
         </BlurableContainer>
       </div>
     );

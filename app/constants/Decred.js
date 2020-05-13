@@ -23,10 +23,10 @@ export const TestNetParams = {
 
   // Address encoding magics
   NetworkAddressPrefix: "T",
-  PubKeyAddrID:         Buffer.from([ 0x28, 0xf7 ]), // starts with Tk
-  PubKeyHashAddrID:     Buffer.from([ 0x0f, 0x21 ]), // starts with Ts
-  PKHEdwardsAddrID:     [ 0x0f, 0x01 ], // starts with Te
-  PKHSchnorrAddrID:     [ 0x0e, 0xe3 ] // starts with TS
+  PubKeyAddrID: Buffer.from([0x28, 0xf7]), // starts with Tk
+  PubKeyHashAddrID: Buffer.from([0x0f, 0x21]), // starts with Ts
+  PKHEdwardsAddrID: [0x0f, 0x01], // starts with Te
+  PKHSchnorrAddrID: [0x0e, 0xe3] // starts with TS
 };
 
 export const MainNetParams = {
@@ -48,10 +48,10 @@ export const MainNetParams = {
 
   // Address encoding magics
   NetworkAddressPrefix: "D",
-  PubKeyAddrID:         [ 0x13, 0x86 ], // starts with Dk
-  PubKeyHashAddrID:     [ 0x07, 0x3f ], // starts with Ds
-  PKHEdwardsAddrID:     [ 0x07, 0x1f ], // starts with De
-  PKHSchnorrAddrID:     [ 0x07, 0x01 ] // starts with DS
+  PubKeyAddrID: [0x13, 0x86], // starts with Dk
+  PubKeyHashAddrID: [0x07, 0x3f], // starts with Ds
+  PKHEdwardsAddrID: [0x07, 0x1f], // starts with De
+  PKHSchnorrAddrID: [0x07, 0x01] // starts with DS
 };
 
 // MAX_DCR_AMOUNT represents the maximum decred amount in atoms.
@@ -60,14 +60,13 @@ export const MAX_DCR_AMOUNT = 21e14;
 // UNIT_DIVISOR represents the minimum value one decred can have in atoms.
 export const UNIT_DIVISOR = 100000000;
 
-
 // STEcdsaSecp256k1 specifies that the signature is an ECDSA signature
 // over the secp256k1 elliptic curve.
-export const	STEcdsaSecp256k1 = 0;
+export const STEcdsaSecp256k1 = 0;
 
 // STEd25519 specifies that the signature is an ECDSA signature over the
 // edwards25519 twisted Edwards curve.
-export const	STEd25519 = 1;
+export const STEd25519 = 1;
 
 // STSchnorrSecp256k1 specifies that the signature is a Schnorr
 // signature over the secp256k1 elliptic curve.

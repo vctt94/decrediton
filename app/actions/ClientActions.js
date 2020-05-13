@@ -16,7 +16,6 @@ import {
   getStakepoolStats
 } from "./StakePoolActions";
 import { getStartupTransactions } from "./TransactionActions";
-import { getDecodeMessageServiceAttempt } from "./DecodeMessageActions";
 import { getAccountMixerServiceAttempt } from "./AccountMixerActions";
 import { checkLnWallet } from "./LNActions";
 import { push as pushHistory, goBack } from "connected-react-router";
@@ -67,7 +66,6 @@ const startWalletServicesTrigger = () => (dispatch, getState) =>
       await dispatch(getPingAttempt());
       await dispatch(getNetworkAttempt());
       await dispatch(refreshStakepoolPurchaseInformation());
-      await dispatch(getDecodeMessageServiceAttempt());
       await dispatch(getVotingServiceAttempt());
       await dispatch(getAgendaServiceAttempt());
       await dispatch(getStakepoolStats());
@@ -141,9 +139,13 @@ export const getStartupWalletInfo = () => (dispatch) => {
   });
 };
 
-export const getWalletServiceAttempt = () => async (dispatch, getState) => {
-  const { grpc: { address, port } } = getState();
-  const { daemon: { walletName } } = getState();
+export const getWalletServiceAttempt = () => (dispatch, getState) => {
+  const {
+    grpc: { address, port }
+  } = getState();
+  const {
+    daemon: { walletName }
+  } = getState();
   dispatch({ type: GETWALLETSERVICE_ATTEMPT });
   wallet
     .getWalletService(sel.isTestNet(getState()), walletName, address, port)
@@ -364,9 +366,12 @@ export const GETSTAKEINFO_SUCCESS = "GETSTAKEINFO_SUCCESS";
 
 export const getStakeInfoAttempt = () => (dispatch, getState) => {
   dispatch({ type: GETSTAKEINFO_ATTEMPT });
-  wallet.getStakeInfo(sel.walletService(getState()))
-    .then(resp => dispatch({ getStakeInfoResponse: resp, type: GETSTAKEINFO_SUCCESS }))
-    .catch(error => dispatch({ error, type: GETSTAKEINFO_FAILED }));
+  wallet
+    .getStakeInfo(sel.walletService(getState()))
+    .then((resp) =>
+      dispatch({ getStakeInfoResponse: resp, type: GETSTAKEINFO_SUCCESS })
+    )
+    .catch((error) => dispatch({ error, type: GETSTAKEINFO_FAILED }));
 };
 
 export const GETTICKETPRICE_ATTEMPT = "GETTICKETPRICE_ATTEMPT";

@@ -4,7 +4,13 @@ import eq from "lodash/fp/eq";
 import { getStakeInfoAttempt, getBalanceUpdateAttempt } from "./ClientActions";
 import { TransactionDetails } from "middleware/walletrpc/api_pb";
 import { getStartupStats } from "./StatisticsActions";
-import { hexToRaw, rawHashToHex, reverseRawHash, strHashToRaw, reverseHash } from "helpers";
+import {
+  hexToRaw,
+  rawHashToHex,
+  reverseRawHash,
+  strHashToRaw,
+  reverseHash
+} from "helpers";
 import { RECENT_TX_COUNT, BATCH_TX_COUNT } from "constants";
 
 export const { TRANSACTION_TYPES } = wallet;
@@ -27,7 +33,8 @@ export const { TRANSACTION_TYPES } = wallet;
 
 export const GETTICKETS_CANCEL = "GETTICKETS_CANCEL";
 
-export const cancelGetTickets = () => dispatch => dispatch({ type: GETTICKETS_CANCEL });
+export const cancelGetTickets = () => (dispatch) =>
+  dispatch({ type: GETTICKETS_CANCEL });
 
 // filterTransactions filters a list of transactions given a filtering object.
 //
@@ -39,27 +46,49 @@ export const cancelGetTickets = () => dispatch => dispatch({ type: GETTICKETS_CA
 // If empty, all transactions are accepted.
 function filterTransactions(transactions, filter) {
   return transactions
-    .filter(v => filter.types.length ? filter.types.indexOf(v.type) > -1 : true)
-    .filter(v => filter.direction ? filter.direction === v.direction : true)
-    .filter(v => filter.search ? v.creditAddresses.find(address => address.length > 1 && address.toLowerCase().indexOf(filter.search.toLowerCase()) !== -1) != undefined : true)
-    .filter(v => filter.minAmount ? Math.abs(v.amount) >= filter.minAmount : true)
-    .filter(v => filter.maxAmount ? Math.abs(v.amount) <= filter.maxAmount : true);
+    .filter((v) =>
+      filter.types.length ? filter.types.indexOf(v.type) > -1 : true
+    )
+    .filter((v) => (filter.direction ? filter.direction === v.direction : true))
+    .filter((v) =>
+      filter.search
+        ? v.creditAddresses.find(
+            (address) =>
+              address.length > 1 &&
+              address.toLowerCase().indexOf(filter.search.toLowerCase()) !== -1
+          ) != undefined
+        : true
+    )
+    .filter((v) =>
+      filter.minAmount ? Math.abs(v.amount) >= filter.minAmount : true
+    )
+    .filter((v) =>
+      filter.maxAmount ? Math.abs(v.amount) <= filter.maxAmount : true
+    );
 }
 
 function checkAccountsToUpdate(txs, accountsToUpdate) {
-  txs.forEach(tx => {
-    tx.tx.getCreditsList().forEach(credit => { if (accountsToUpdate.find(eq(credit.getAccount())) === undefined) accountsToUpdate.push(credit.getAccount()); });
-    tx.tx.getDebitsList().forEach(debit => { if (accountsToUpdate.find(eq(debit.getPreviousAccount())) === undefined) accountsToUpdate.push(debit.getPreviousAccount()); });
+  txs.forEach((tx) => {
+    tx.tx.getCreditsList().forEach((credit) => {
+      if (accountsToUpdate.find(eq(credit.getAccount())) === undefined)
+        accountsToUpdate.push(credit.getAccount());
+    });
+    tx.tx.getDebitsList().forEach((debit) => {
+      if (accountsToUpdate.find(eq(debit.getPreviousAccount())) === undefined)
+        accountsToUpdate.push(debit.getPreviousAccount());
+    });
   });
   return accountsToUpdate;
 }
 
 function checkForStakeTransactions(txs) {
-  var stakeTxsFound = false;
-  txs.forEach(tx => {
-    if (tx.type == TransactionDetails.TransactionType.VOTE ||
+  let stakeTxsFound = false;
+  txs.forEach((tx) => {
+    if (
+      tx.type == TransactionDetails.TransactionType.VOTE ||
       tx.type == TransactionDetails.TransactionType.TICKET_PURCHASE ||
-      tx.type == TransactionDetails.TransactionType.REVOCATION) {
+      tx.type == TransactionDetails.TransactionType.REVOCATION
+    ) {
       stakeTxsFound = true;
     }
   });
@@ -71,79 +100,139 @@ export const MATURINGHEIGHTS_CHANGED = "MATURINGHEIGHTS_CHANGED";
 
 // newTransactionsReceived should be called when a new set of transactions has
 // been received from the wallet (through a notification).
-export const newTransactionsReceived = (newlyMinedTransactions, newlyUnminedTransactions) => async (dispatch, getState) => {
-  if (!newlyMinedTransactions.length && !newlyUnminedTransactions.length) return;
+export const newTransactionsReceived = (
+  newlyMinedTransactions,
+  newlyUnminedTransactions
+) => (dispatch, getState) => {
+  if (!newlyMinedTransactions.length && !newlyUnminedTransactions.length)
+    return;
 
-  let { unminedTransactions, transactions, recentRegularTransactions, recentStakeTransactions } = getState().grpc;
-  const { transactionsFilter } = getState().grpc;
+  let {
+    unminedTransactions,
+    recentRegularTransactions,
+    recentStakeTransactions
+  } = getState().grpc;
+  const { transactionsFilter, transactions } = getState().grpc;
   const chainParams = sel.chainParams(getState());
 
   // aux maps of [txhash] => tx (used to ensure no duplicate txs)
-  const newlyMinedMap = newlyMinedTransactions.reduce((m, v) => { m[v.hash] = v; return m; }, {});
-  const newlyUnminedMap = newlyUnminedTransactions.reduce((m, v) => { m[v.hash] = v; return m; }, {});
+  const newlyMinedMap = newlyMinedTransactions.reduce((m, v) => {
+    m[v.hash] = v;
+    return m;
+  }, {});
+  const newlyUnminedMap = newlyUnminedTransactions.reduce((m, v) => {
+    m[v.hash] = v;
+    return m;
+  }, {});
 
-  const unminedMap = unminedTransactions.reduce((m, v) => { m[v.hash] = v; return m; }, {});
+  const unminedMap = unminedTransactions.reduce((m, v) => {
+    m[v.hash] = v;
+    return m;
+  }, {});
 
-  const unminedDupeCheck = newlyUnminedTransactions.filter(tx => !transactions[tx.txHash] && !unminedMap[tx.txHash]);
+  const unminedDupeCheck = newlyUnminedTransactions.filter(
+    (tx) => !transactions[tx.txHash] && !unminedMap[tx.txHash]
+  );
 
   let accountsToUpdate = new Array();
   accountsToUpdate = checkAccountsToUpdate(unminedDupeCheck, accountsToUpdate);
-  accountsToUpdate = checkAccountsToUpdate(newlyMinedTransactions, accountsToUpdate);
+  accountsToUpdate = checkAccountsToUpdate(
+    newlyMinedTransactions,
+    accountsToUpdate
+  );
   accountsToUpdate = Array.from(new Set(accountsToUpdate));
-  accountsToUpdate.forEach(v => dispatch(getBalanceUpdateAttempt(v, 0)));
+  accountsToUpdate.forEach((v) => dispatch(getBalanceUpdateAttempt(v, 0)));
 
-  const hasStakeTxs = checkForStakeTransactions(unminedDupeCheck) || checkForStakeTransactions(newlyMinedTransactions);
+  const hasStakeTxs =
+    checkForStakeTransactions(unminedDupeCheck) ||
+    checkForStakeTransactions(newlyMinedTransactions);
   if (hasStakeTxs) {
     dispatch(getStakeInfoAttempt());
   }
 
-  unminedTransactions = filterTransactions([
-    ...newlyUnminedTransactions,
-    ...unminedTransactions.filter(tx => !newlyMinedMap[tx.hash] && !newlyUnminedMap[tx.hash])
-  ], transactionsFilter);
+  unminedTransactions = filterTransactions(
+    [
+      ...newlyUnminedTransactions,
+      ...unminedTransactions.filter(
+        (tx) => !newlyMinedMap[tx.hash] && !newlyUnminedMap[tx.hash]
+      )
+    ],
+    transactionsFilter
+  );
 
   const regularTransactionFilter = {
     listDirection: "desc",
-    types: [ TransactionDetails.TransactionType.REGULAR ],
+    types: [TransactionDetails.TransactionType.REGULAR],
     direction: null
   };
 
-  recentRegularTransactions = filterTransactions([
-    ...newlyUnminedTransactions,
-    ...newlyMinedTransactions,
-    ...recentRegularTransactions.filter(tx => !newlyMinedMap[tx.hash] && !newlyUnminedMap[tx.hash])
-  ], regularTransactionFilter).slice(0, RECENT_TX_COUNT).map(tx => tx);
+  recentRegularTransactions = filterTransactions(
+    [
+      ...newlyUnminedTransactions,
+      ...newlyMinedTransactions,
+      ...recentRegularTransactions.filter(
+        (tx) => !newlyMinedMap[tx.hash] && !newlyUnminedMap[tx.hash]
+      )
+    ],
+    regularTransactionFilter
+  )
+    .slice(0, RECENT_TX_COUNT)
+    .map((tx) => tx);
 
   const stakeTransactionFilter = {
     listDirection: "desc",
-    types: [ TransactionDetails.TransactionType.TICKET_PURCHASE, TransactionDetails.TransactionType.VOTE, TransactionDetails.TransactionType.REVOCATION ],
+    types: [
+      TransactionDetails.TransactionType.TICKET_PURCHASE,
+      TransactionDetails.TransactionType.VOTE,
+      TransactionDetails.TransactionType.REVOCATION
+    ],
     direction: null
   };
 
-  recentStakeTransactions = filterTransactions([
-    ...newlyUnminedTransactions,
-    ...newlyMinedTransactions,
-    ...recentStakeTransactions.filter(tx => !newlyMinedMap[tx.hash] && !newlyUnminedMap[tx.hash])
-  ], stakeTransactionFilter).slice(0, RECENT_TX_COUNT);
+  recentStakeTransactions = filterTransactions(
+    [
+      ...newlyUnminedTransactions,
+      ...newlyMinedTransactions,
+      ...recentStakeTransactions.filter(
+        (tx) => !newlyMinedMap[tx.hash] && !newlyUnminedMap[tx.hash]
+      )
+    ],
+    stakeTransactionFilter
+  ).slice(0, RECENT_TX_COUNT);
 
   const { maturingBlockHeights } = getState().grpc;
   const newMaturingHeights = { ...maturingBlockHeights };
-  const mergeNewMaturingHeights = (hs) => Object.keys(hs).forEach(h => {
-    const accounts = newMaturingHeights[h] || [];
-    hs[h].forEach(a => accounts.indexOf(a) === -1 ? accounts.push(a) : null);
-    newMaturingHeights[h] = accounts;
+  const mergeNewMaturingHeights = (hs) =>
+    Object.keys(hs).forEach((h) => {
+      const accounts = newMaturingHeights[h] || [];
+      hs[h].forEach((a) =>
+        accounts.indexOf(a) === -1 ? accounts.push(a) : null
+      );
+      newMaturingHeights[h] = accounts;
+    });
+
+  mergeNewMaturingHeights(
+    transactionsMaturingHeights(newlyMinedTransactions, chainParams)
+  );
+  dispatch({
+    maturingBlockHeights: newMaturingHeights,
+    type: MATURINGHEIGHTS_CHANGED
   });
 
-  mergeNewMaturingHeights(transactionsMaturingHeights(newlyMinedTransactions, chainParams));
-  dispatch({ maturingBlockHeights: newMaturingHeights, type: MATURINGHEIGHTS_CHANGED });
-
   dispatch({
-    recentRegularTransactions, recentStakeTransactions, type: NEW_TRANSACTIONS_RECEIVED,
-    unminedTransactions, newlyUnminedTransactions, newlyMinedTransactions
+    recentRegularTransactions,
+    recentStakeTransactions,
+    type: NEW_TRANSACTIONS_RECEIVED,
+    unminedTransactions,
+    newlyUnminedTransactions,
+    newlyMinedTransactions
   });
 
   if (newlyMinedTransactions.length > 0) {
-    const { startupStatsEndCalcTime, startupStatsCalcSeconds } = getState().statistics;
+    const {
+      startupStatsEndCalcTime,
+      startupStatsCalcSeconds
+    } = getState().statistics;
     const secFromLastStats = (new Date() - startupStatsEndCalcTime) / 1000;
     if (secFromLastStats > 5 * startupStatsCalcSeconds) {
       dispatch(getStartupStats());
@@ -154,7 +243,10 @@ export const newTransactionsReceived = (newlyMinedTransactions, newlyUnminedTran
 export const CHANGE_TRANSACTIONS_FILTER = "CHANGE_TRANSACTIONS_FILTER";
 export function changeTransactionsFilter(newFilter) {
   return (dispatch) => {
-    dispatch({ transactionsFilter: newFilter, type: CHANGE_TRANSACTIONS_FILTER });
+    dispatch({
+      transactionsFilter: newFilter,
+      type: CHANGE_TRANSACTIONS_FILTER
+    });
     return dispatch(getTransactions());
   };
 }
@@ -175,8 +267,10 @@ export const getStartupTransactions = () => async (dispatch, getState) => {
   const chainParams = sel.chainParams(getState());
   let startRequestHeight = currentBlockHeight;
   const pageSize = 50;
-  const voteTypes = [ TransactionDetails.TransactionType.VOTE,
-    TransactionDetails.TransactionType.REVOCATION ];
+  const voteTypes = [
+    TransactionDetails.TransactionType.VOTE,
+    TransactionDetails.TransactionType.REVOCATION
+  ];
   const checkHeightDeltas = [
     chainParams.TicketMaturity,
     chainParams.CoinbaseMaturity,
@@ -185,8 +279,8 @@ export const getStartupTransactions = () => async (dispatch, getState) => {
   const immatureHeight = currentBlockHeight - Math.max(...checkHeightDeltas);
 
   let foundNeededTransactions = false;
-  let recentRegularTxs = [];
-  let recentStakeTxs = [];
+  const recentRegularTxs = [];
+  const recentStakeTxs = [];
   // maturingBlockHeights are kept to check when having new blocks if we need
   // to update account's balances.
   const maturingBlockHeights = {};
@@ -194,20 +288,25 @@ export const getStartupTransactions = () => async (dispatch, getState) => {
 
   // the mergeXXX functions pick a list of transactions returned from
   // getTransactions and fills the appropriate result variables
-  const mergeRegularTxs = txs =>
+  const mergeRegularTxs = (txs) =>
     recentRegularTxs.length < RECENT_TX_COUNT &&
-    recentRegularTxs.push(...txs.filter(tx => !tx.isStake));
+    recentRegularTxs.push(...txs.filter((tx) => !tx.isStake));
 
-  const mergeStakeTxs = txs =>
-    (recentStakeTxs.length < RECENT_TX_COUNT) &&
-    (recentStakeTxs.push(...txs.filter(
-      tx => {
+  const mergeStakeTxs = (txs) =>
+    recentStakeTxs.length < RECENT_TX_COUNT &&
+    recentStakeTxs.push(
+      ...txs.filter((tx) => {
         if (voteTypes.indexOf(tx.type) > -1) {
           // always include vote or revocation and mark ticket as voted so we
           // don't include it in the recent list
-          const decodedSpender = wallet.decodeRawTransaction(Buffer.from(tx.tx.getTransaction()), chainParams);
+          const decodedSpender = wallet.decodeRawTransaction(
+            Buffer.from(tx.tx.getTransaction()),
+            chainParams
+          );
           const spenderInputs = decodedSpender.inputs;
-          const ticketHash = reverseRawHash(spenderInputs[spenderInputs.length - 1].prevTxId);
+          const ticketHash = reverseRawHash(
+            spenderInputs[spenderInputs.length - 1].prevTxId
+          );
           votedTickets[ticketHash] = true;
           return true;
         }
@@ -216,23 +315,29 @@ export const getStartupTransactions = () => async (dispatch, getState) => {
           return !votedTickets[tx.txHash];
         }
         return false;
-      }))
+      })
     );
 
-  const mergeImmatureHeights = txs => {
+  const mergeImmatureHeights = (txs) => {
     if (startRequestHeight < immatureHeight) return;
     const txHeights = transactionsMaturingHeights(txs, chainParams);
-    Object.keys(txHeights).forEach(h => {
+    Object.keys(txHeights).forEach((h) => {
       if (h < currentBlockHeight) return;
       const accounts = maturingBlockHeights[h] || [];
-      txHeights[h].forEach(a => accounts.indexOf(a) === -1 ? accounts.push(a) : null);
+      txHeights[h].forEach((a) =>
+        accounts.indexOf(a) === -1 ? accounts.push(a) : null
+      );
       maturingBlockHeights[h] = accounts;
     });
   };
 
   // get any unmined transactions
-  let { unmined } = await wallet.getTransactions(walletService,
-    -1, -1, pageSize);
+  let { unmined } = await wallet.getTransactions(
+    walletService,
+    -1,
+    -1,
+    pageSize
+  );
   unmined = await normalizeBatchTx(walletService, chainParams, unmined);
   let transactions = unmined.reduce((m, t) => {
     m[t.txHash] = t;
@@ -244,8 +349,12 @@ export const getStartupTransactions = () => async (dispatch, getState) => {
   mergeImmatureHeights(unmined);
 
   while (!foundNeededTransactions) {
-    let { mined } = await wallet.getTransactions(walletService,
-      startRequestHeight, 1, pageSize);
+    let { mined } = await wallet.getTransactions(
+      walletService,
+      startRequestHeight,
+      1,
+      pageSize
+    );
     mined = await normalizeBatchTx(walletService, chainParams, mined);
     // make transactions map
     transactions = mined.reduce((m, t) => {
@@ -263,8 +372,8 @@ export const getStartupTransactions = () => async (dispatch, getState) => {
     mergeImmatureHeights(mined);
 
     foundNeededTransactions =
-      (recentRegularTxs.length >= RECENT_TX_COUNT) &&
-      (recentStakeTxs.length >= RECENT_TX_COUNT);
+      recentRegularTxs.length >= RECENT_TX_COUNT &&
+      recentStakeTxs.length >= RECENT_TX_COUNT;
 
     const lastTransaction = mined[mined.length - 1];
     startRequestHeight = lastTransaction.height - 1;
@@ -275,10 +384,12 @@ export const getStartupTransactions = () => async (dispatch, getState) => {
     }
   }
 
-
   dispatch({
     type: GETSTARTUPTRANSACTIONS_SUCCESS,
-    recentRegularTxs, recentStakeTxs, maturingBlockHeights, transactions
+    recentRegularTxs,
+    recentStakeTxs,
+    maturingBlockHeights,
+    transactions
   });
 };
 
@@ -286,42 +397,53 @@ export const DECODERAWTXS_SUCCESS = "DECODERAWTXS_SUCCESS";
 export const DECODERAWTXS_FAILED = "DECODERAWTXS_FAILED";
 
 // decodeRawTransaction requests decodification of a raw, hex-encoded transaction.
-export const decodeRawTransaction = (hexTx) => (dispatch, getState) => new Promise((resolve, reject) => {
-  const chainParams = sel.chainParams(getState());
-  wallet.decodeRawTransaction(hexTx, chainParams)
-    .then(resp => {
-      const decodedTx = resp.getTransaction();
-      const hash = reverseHash(Buffer.from(decodedTx.getTransactionHash()).toString("hex"));
-      dispatch({ decodedTx, hash, type: DECODERAWTXS_SUCCESS });
-      resolve(decodedTx);
-    })
-    .catch(error => {
-      dispatch({ error, type: DECODERAWTXS_FAILED });
-      reject(error);
-    });
-});
+export const decodeRawTransaction = (hexTx) => (dispatch, getState) =>
+  new Promise((resolve, reject) => {
+    const chainParams = sel.chainParams(getState());
+    wallet
+      .decodeRawTransaction(hexTx, chainParams)
+      .then((resp) => {
+        const decodedTx = resp.getTransaction();
+        const hash = reverseHash(
+          Buffer.from(decodedTx.getTransactionHash()).toString("hex")
+        );
+        dispatch({ decodedTx, hash, type: DECODERAWTXS_SUCCESS });
+        resolve(decodedTx);
+      })
+      .catch((error) => {
+        dispatch({ error, type: DECODERAWTXS_FAILED });
+        reject(error);
+      });
+  });
 
 // getNonWalletOutputs decodes a tx and gets outputs which are not from the wallet.
 // This is needed to show output addresses at our home and tx history pages.
-const getNonWalletOutputs = (walletService, chainParams, tx) => new Promise((resolve, reject) => {
-  try {
-    const decodedTx = wallet.decodeRawTransaction(Buffer.from(tx.getTransaction()), chainParams);
-    const updatedOutputs = decodedTx.outputs.map(async o => {
-      const address = o.addresses[0].address;
-      // Validate address so we can check if it is our own.
-      // If that is the case it is a change output.
-      const addrValidResp = await wallet.validateAddress(walletService, address);
-      return {
-        address,
-        value: o.value,
-        isChange: addrValidResp.getIsMine()
-      };
-    });
-    resolve(Promise.all(updatedOutputs));
-  } catch (e) {
-    reject(e);
-  }
-});
+const getNonWalletOutputs = (walletService, chainParams, tx) =>
+  new Promise((resolve, reject) => {
+    try {
+      const decodedTx = wallet.decodeRawTransaction(
+        Buffer.from(tx.getTransaction()),
+        chainParams
+      );
+      const updatedOutputs = decodedTx.outputs.map(async (o) => {
+        const address = o.addresses[0].address;
+        // Validate address so we can check if it is our own.
+        // If that is the case it is a change output.
+        const addrValidResp = await wallet.validateAddress(
+          walletService,
+          address
+        );
+        return {
+          address,
+          value: o.value,
+          isChange: addrValidResp.getIsMine()
+        };
+      });
+      resolve(Promise.all(updatedOutputs));
+    } catch (e) {
+      reject(e);
+    }
+  });
 
 export const GETTRANSACTIONS_ATTEMPT = "GETTRANSACTIONS_ATTEMPT";
 export const GETTRANSACTIONS_FAILED = "GETTRANSACTIONS_FAILED";
@@ -333,7 +455,10 @@ export const GETTRANSACTIONS_COMPLETE = "GETTRANSACTIONS_COMPLETE";
 const normalizeTx = async (walletService, chainParams, tx) => {
   if (tx.isStake) {
     // For stake txs, fetch the missing stake info.
-    return { ...tx, ...await getMissingStakeTxData(walletService, chainParams, tx) };
+    return {
+      ...tx,
+      ...(await getMissingStakeTxData(walletService, chainParams, tx))
+    };
   }
 
   // For regular tx we get the nonWalletoutputs so we can show them at
@@ -344,9 +469,11 @@ const normalizeTx = async (walletService, chainParams, tx) => {
 };
 
 const normalizeBatchTx = async (walletService, chainParams, txs) =>
-  await Promise.all(txs.map(
-    tx => (async () => await normalizeTx(walletService, chainParams, tx))()
-  ));
+  await Promise.all(
+    txs.map((tx) =>
+      (async () => await normalizeTx(walletService, chainParams, tx))()
+    )
+  );
 
 // getTransactions loads a list of transactions from the wallet, given the
 // current grpc state.
@@ -360,7 +487,10 @@ const normalizeBatchTx = async (walletService, chainParams, txs) =>
 // `grpc.noMoreTransactions` is set to true.
 export const getTransactions = () => async (dispatch, getState) => {
   const {
-    currentBlockHeight, getTransactionsRequestAttempt, transactionsFilter, walletService
+    currentBlockHeight,
+    getTransactionsRequestAttempt,
+    transactionsFilter,
+    walletService
   } = getState().grpc;
   const chainParams = sel.chainParams(getState());
   let { noMoreTransactions, lastTransaction } = getState().grpc;
@@ -368,7 +498,9 @@ export const getTransactions = () => async (dispatch, getState) => {
 
   if (!currentBlockHeight) {
     // Wait a little then re-dispatch this call since we have no starting height yet
-    setTimeout(() => { dispatch(getTransactions()); }, 1000);
+    setTimeout(() => {
+      dispatch(getTransactions());
+    }, 1000);
     return;
   }
   dispatch({ type: GETTRANSACTIONS_ATTEMPT });
@@ -382,7 +514,7 @@ export const getTransactions = () => async (dispatch, getState) => {
 
   // now, request a batch of mined transactions until BATCH_TX_COUNT
   // transactions have been obtained (after filtering)
-  let reachedGenesis = false;
+  const reachedGenesis = false;
   let transactions = unmined.reduce((m, t) => {
     m[t.txHash] = t;
     return m;
@@ -396,7 +528,9 @@ export const getTransactions = () => async (dispatch, getState) => {
 
     if (transactionsFilter.listDirection === "desc") {
       endRequestHeight = 1;
-      startRequestHeight = lastTransaction ? lastTransaction.height - 1 : currentBlockHeight;
+      startRequestHeight = lastTransaction
+        ? lastTransaction.height - 1
+        : currentBlockHeight;
       // Reached genesis.
       if (startRequestHeight < 1) {
         noMoreTransactions = true;
@@ -409,7 +543,10 @@ export const getTransactions = () => async (dispatch, getState) => {
 
     try {
       let { mined } = await wallet.getTransactions(
-        walletService, startRequestHeight, endRequestHeight, BATCH_TX_COUNT
+        walletService,
+        startRequestHeight,
+        endRequestHeight,
+        BATCH_TX_COUNT
       );
       // no more transactions
       if (mined.length === 0) {
@@ -425,17 +562,25 @@ export const getTransactions = () => async (dispatch, getState) => {
         m[t.txHash] = t;
         return m;
       }, transactions);
-
     } catch (error) {
       dispatch({ type: GETTRANSACTIONS_FAILED, error });
       return;
     }
   }
 
-  return dispatch({ type: GETTRANSACTIONS_COMPLETE, noMoreTransactions, lastTransaction, transactions });
+  return dispatch({
+    type: GETTRANSACTIONS_COMPLETE,
+    noMoreTransactions,
+    lastTransaction,
+    transactions
+  });
 };
 
-const getMissingStakeTxData = async (walletService, chainParams, transaction) => {
+const getMissingStakeTxData = async (
+  walletService,
+  chainParams,
+  transaction
+) => {
   let ticketTx, spenderTx, status;
   const { txHash, txType, rawTx, tx } = transaction;
 
@@ -460,8 +605,12 @@ const getMissingStakeTxData = async (walletService, chainParams, transaction) =>
       }
     }
     ticketTx = tx;
-  } else { // vote/revoke
-    const decodedSpender = wallet.decodeRawTransaction(Buffer.from(rawTx, "hex"), chainParams);
+  } else {
+    // vote/revoke
+    const decodedSpender = wallet.decodeRawTransaction(
+      Buffer.from(rawTx, "hex"),
+      chainParams
+    );
 
     // Find the ticket hash of the vote/revoke.
     const spenderInputs = decodedSpender.inputs;
@@ -492,8 +641,10 @@ const getMissingStakeTxData = async (walletService, chainParams, transaction) =>
   return { ticket: ticketTx, spender: spenderTx, status };
 };
 
-export const FETCHMISSINGSTAKETXDATA_ATTEMPT = "FETCHMISSINGSTAKETXDATA_ATTEMPT";
-export const FETCHMISSINGSTAKETXDATA_SUCCESS = "FETCHMISSINGSTAKETXDATA_SUCCESS";
+export const FETCHMISSINGSTAKETXDATA_ATTEMPT =
+  "FETCHMISSINGSTAKETXDATA_ATTEMPT";
+export const FETCHMISSINGSTAKETXDATA_SUCCESS =
+  "FETCHMISSINGSTAKETXDATA_SUCCESS";
 export const FETCHMISSINGSTAKETXDATA_FAILED = "FETCHMISSINGSTAKETXDATA_FAILED";
 
 // fetchMissingStakeTxData fetches the missing stake information of a given
@@ -503,8 +654,7 @@ export const FETCHMISSINGSTAKETXDATA_FAILED = "FETCHMISSINGSTAKETXDATA_FAILED";
 //
 // This function is not suitable for calling on a list of transactions, since
 // some cases/operations are slow.
-export const fetchMissingStakeTxData = tx => async (dispatch, getState) => {
-
+export const fetchMissingStakeTxData = (tx) => async (dispatch, getState) => {
   const { walletService, fetchMissingStakeTxDataAttempt } = getState().grpc;
   const chainParams = sel.chainParams(getState());
   if (fetchMissingStakeTxDataAttempt[tx.txHash]) {
@@ -516,18 +666,21 @@ export const fetchMissingStakeTxData = tx => async (dispatch, getState) => {
 
   const oldTxs = getState().grpc.transactions;
   const oldStakeTxs = getState().grpc.recentStakeTransactions;
-  const txIdx = oldTxs.findIndex(t => t.txHash === tx.txHash);
-  const stakeTxIdx = oldStakeTxs.findIndex(t => t.txHash === tx.txHash);
+  const txIdx = oldTxs.findIndex((t) => t.txHash === tx.txHash);
+  const stakeTxIdx = oldStakeTxs.findIndex((t) => t.txHash === tx.txHash);
 
-  if ((txIdx > -1) || (stakeTxIdx > -1)) {
-    const dispatchState = { txHash: tx.txHash, type: FETCHMISSINGSTAKETXDATA_SUCCESS };
+  if (txIdx > -1 || stakeTxIdx > -1) {
+    const dispatchState = {
+      txHash: tx.txHash,
+      type: FETCHMISSINGSTAKETXDATA_SUCCESS
+    };
     if (txIdx > -1) {
-      const newTxs = [ ...oldTxs ];
+      const newTxs = [...oldTxs];
       newTxs[txIdx] = newTx;
       dispatchState["transactions"] = newTxs;
     }
     if (stakeTxIdx > -1) {
-      const newStakeTxs = [ ...oldStakeTxs ];
+      const newStakeTxs = [...oldStakeTxs];
       newStakeTxs[stakeTxIdx] = newTx;
       dispatchState["recentStakeTransactions"] = newStakeTxs;
     }
@@ -543,28 +696,30 @@ export const fetchMissingStakeTxData = tx => async (dispatch, getState) => {
 // Given a list of transactions, returns the maturing heights of all
 // stake txs in the list.
 function transactionsMaturingHeights(txs, chainParams) {
-  let res = {};
+  const res = {};
   const addToRes = (height, found) => {
     const accounts = res[height] || [];
-    found.forEach(a => accounts.indexOf(a) === -1 ? accounts.push(a) : null);
+    found.forEach((a) =>
+      accounts.indexOf(a) === -1 ? accounts.push(a) : null
+    );
     res[height] = accounts;
   };
 
-  txs.forEach(tx => {
-    let accountsToUpdate = [];
+  txs.forEach((tx) => {
+    const accountsToUpdate = [];
     switch (tx.type) {
-    case TransactionDetails.TransactionType.TICKET_PURCHASE:
-      checkAccountsToUpdate([ tx ], accountsToUpdate);
-      addToRes(tx.height + chainParams.TicketExpiry, accountsToUpdate);
-      addToRes(tx.height + chainParams.SStxChangeMaturity, accountsToUpdate);
-      addToRes(tx.height + chainParams.TicketMaturity, accountsToUpdate); // FIXME: remove as it doesn't change balances
-      break;
+      case TransactionDetails.TransactionType.TICKET_PURCHASE:
+        checkAccountsToUpdate([tx], accountsToUpdate);
+        addToRes(tx.height + chainParams.TicketExpiry, accountsToUpdate);
+        addToRes(tx.height + chainParams.SStxChangeMaturity, accountsToUpdate);
+        addToRes(tx.height + chainParams.TicketMaturity, accountsToUpdate); // FIXME: remove as it doesn't change balances
+        break;
 
-    case TransactionDetails.TransactionType.VOTE:
-    case TransactionDetails.TransactionType.REVOCATION:
-      checkAccountsToUpdate([ tx ], accountsToUpdate);
-      addToRes(tx.height + chainParams.CoinbaseMaturity, accountsToUpdate);
-      break;
+      case TransactionDetails.TransactionType.VOTE:
+      case TransactionDetails.TransactionType.REVOCATION:
+        checkAccountsToUpdate([tx], accountsToUpdate);
+        addToRes(tx.height + chainParams.CoinbaseMaturity, accountsToUpdate);
+        break;
     }
   });
 
@@ -574,28 +729,37 @@ function transactionsMaturingHeights(txs, chainParams) {
 // getAmountFromTxInputs receives a decoded unsignedTx and adds the amount of
 // each input from the previous transaction. We need this because when decoding
 // a tx, the amount of the input is not deoded with it.
-export const getAmountFromTxInputs = (unsignedTx) => async (dispatch, getState) => {
+export const getAmountFromTxInputs = (unsignedTx) => async (
+  dispatch,
+  getState
+) => {
   const { walletService } = getState().grpc;
   const chainParams = sel.chainParams(getState());
-  const inputWithAmount = unsignedTx.inputs.map(async (
-    { prevTxId, outputIndex }, i
-  ) => {
-    const oldTx = await wallet.getTransaction(walletService, prevTxId);
-    if (!oldTx) {
-      return Promise.reject(new Error(`Transaction ${prevTxId} not found`));
+  const inputWithAmount = unsignedTx.inputs.map(
+    async ({ prevTxId, outputIndex }, i) => {
+      const oldTx = await wallet.getTransaction(walletService, prevTxId);
+      if (!oldTx) {
+        return Promise.reject(new Error(`Transaction ${prevTxId} not found`));
+      }
+      const rawTxBuffer = Buffer.from(hexToRaw(oldTx.rawTx));
+      const decodedOldTx = wallet.decodeRawTransaction(
+        rawTxBuffer,
+        chainParams
+      );
+      const oldOutput = decodedOldTx.outputs[outputIndex];
+      if (!oldOutput) {
+        return Promise.reject(
+          new Error(`Unknown outpoint ${prevTxId}:${outputIndex} not found`)
+        );
+      }
+      unsignedTx.inputs[i].amountIn = decodedOldTx.outputs[outputIndex].value;
+      // we also save the outpoint address to perform sanity checkes on trezor txs.
+      unsignedTx.inputs[i].outpointAddress =
+        decodedOldTx.outputs[outputIndex].addresses[0].address;
+      unsignedTx.inputs[i].outpoint = `${prevTxId}:${outputIndex}`;
+      return unsignedTx.inputs[i];
     }
-    const rawTxBuffer = Buffer.from(hexToRaw(oldTx.rawTx));
-    const decodedOldTx = wallet.decodeRawTransaction(rawTxBuffer, chainParams);
-    const oldOutput = decodedOldTx.outputs[outputIndex];
-    if (!oldOutput) {
-      return Promise.reject(new Error(`Unknown outpoint ${prevTxId}:${outputIndex} not found`));
-    }
-    unsignedTx.inputs[i].amountIn = decodedOldTx.outputs[outputIndex].value;
-    // we also save the outpoint address to perform sanity checkes on trezor txs.
-    unsignedTx.inputs[i].outpointAddress = decodedOldTx.outputs[outputIndex].addresses[0].address;
-    unsignedTx.inputs[i].outpoint = `${prevTxId}:${outputIndex}`;
-    return unsignedTx.inputs[i];
-  });
+  );
 
   unsignedTx.inputs = await Promise.all(inputWithAmount);
 
@@ -604,30 +768,32 @@ export const getAmountFromTxInputs = (unsignedTx) => async (dispatch, getState) 
 
 // getTxFromInputs receives a decoded unsignedTx as parameter and gets the txs
 // which participate in the input.
-export const getTxFromInputs = (unsignedTx) => (dispatch, getState) => new Promise((
-  resolve, reject
-) => {
-  const { walletService } = getState().grpc;
-  const chainParams = sel.chainParams(getState());
-  // aux map to know if we already has gotten a tx.
-  const txsMap = {};
-  const txs = unsignedTx.inputs.reduce(async (txs, inp) => {
-    const { prevTxId } = inp;
-    if (txsMap[prevTxId]) return;
+export const getTxFromInputs = (unsignedTx) => (dispatch, getState) =>
+  new Promise((resolve, reject) => {
+    const { walletService } = getState().grpc;
+    const chainParams = sel.chainParams(getState());
+    // aux map to know if we already has gotten a tx.
+    const txsMap = {};
+    const txs = unsignedTx.inputs.reduce(async (txs, inp) => {
+      const { prevTxId } = inp;
+      if (txsMap[prevTxId]) return;
 
-    txsMap[prevTxId] = true;
-    const oldTx = await wallet.getTransaction(walletService, prevTxId);
-    if (!oldTx) {
-      return reject(new Error(`Transaction ${prevTxId} not found`));
-    }
+      txsMap[prevTxId] = true;
+      const oldTx = await wallet.getTransaction(walletService, prevTxId);
+      if (!oldTx) {
+        return reject(new Error(`Transaction ${prevTxId} not found`));
+      }
 
-    const rawTxBuffer = Buffer.from(hexToRaw(oldTx.rawTx));
-    const decodedOldTx = wallet.decodeRawTransaction(rawTxBuffer, chainParams);
+      const rawTxBuffer = Buffer.from(hexToRaw(oldTx.rawTx));
+      const decodedOldTx = wallet.decodeRawTransaction(
+        rawTxBuffer,
+        chainParams
+      );
 
-    txs.push(decodedOldTx);
+      txs.push(decodedOldTx);
 
-    return txs;
-  }, []);
+      return txs;
+    }, []);
 
-  resolve(txs);
-});
+    resolve(txs);
+  });

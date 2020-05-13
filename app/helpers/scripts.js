@@ -14,13 +14,14 @@ const OP_CHECKSIG = 0xac; // 172
 const extractPubKeyHash = (script) => {
   // A pay-to-pubkey-hash script is of the form:
   //  OP_DUP OP_HASH160 <20-byte hash> OP_EQUALVERIFY OP_CHECKSIG
-  if (script.length === 25 &&
-		script[0] == OP_DUP &&
-		script[1] == OP_HASH160 &&
-		script[2] == OP_DATA_20 &&
-		script[23] == OP_EQUALVERIFY &&
-		script[24] == OP_CHECKSIG) {
-
+  if (
+    script.length === 25 &&
+    script[0] == OP_DUP &&
+    script[1] == OP_HASH160 &&
+    script[2] == OP_DATA_20 &&
+    script[23] == OP_EQUALVERIFY &&
+    script[24] == OP_CHECKSIG
+  ) {
     return script.slice(3, 23);
   }
 
@@ -34,7 +35,7 @@ const extractPubKeyHash = (script) => {
 // return  []dcrutil.Address
 const pubKeyHashToAddrs = (hash, params) => {
   // Skip the pubkey hash if it's invalid for some reason.
-  let addr = newAddressPubKeyHash(hash, params, STEcdsaSecp256k1);
+  const addr = newAddressPubKeyHash(hash, params, STEcdsaSecp256k1);
   if (addr.error) {
     return addr.error;
   }
@@ -52,13 +53,12 @@ const PubKeyHashTy = "pubkeyhash";
 // with an invalid script version error.
 
 // return (ScriptClass, []dcrutil.Address, int, error)
-export const extractPkScriptAddrs = (version, pkScript, chainParams) =>  {
+export const extractPkScriptAddrs = (version, pkScript, chainParams) => {
   if (version != 0) {
     return { error: "invalid script version" };
   }
 
-  let hash;
-  hash = extractPubKeyHash(pkScript);
+  const hash = extractPubKeyHash(pkScript);
   // console.log(hash)
   // Check for pay-to-pubkey-hash script.
   if (hash) {

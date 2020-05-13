@@ -10,8 +10,12 @@ const mapStateToProps = selectorMap({
   currentBlockHeight: sel.currentBlockHeight
 });
 
-const mapDispatchToProps = dispatch => bindActionCreators({
-  cancelGetTickets: ta.cancelGetTickets
-}, dispatch);
+const mapDispatchToProps = (dispatch) =>
+  bindActionCreators(
+    {
+      cancelGetTickets: ta.cancelGetTickets
+    },
+    dispatch
+  );
 
 export default connect(mapStateToProps, mapDispatchToProps);
