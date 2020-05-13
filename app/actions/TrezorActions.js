@@ -3,43 +3,18 @@ import trezorTransports from "trezor-link";
 import * as wallet from "wallet";
 import * as selectors from "selectors";
 import fs from "fs";
-import { sprintf } from "sprintf-js";
-import { rawHashToHex, rawToHex, hexToRaw, str2utf8hex, hex2b64 } from "helpers";
+import { rawToHex, hexToRaw, str2utf8hex, hex2b64 } from "helpers";
+import { walletTxToBtcjsTx, walletTxToRefTx, WALLET_ACCOUNT, accountPath, addressPath } from "helpers/trezor";
 import { publishTransactionAttempt } from "./ControlActions";
-import { model1_decred_homescreen, messages } from "helpers/trezor";
+import { model1_decred_homescreen, messages } from "constants/trezor";
 import { getWalletCfg } from "config";
-
 import { EXTERNALREQUEST_TREZOR_BRIDGE } from "main_dev/externalRequests";
 import {
   SIGNTX_ATTEMPT, SIGNTX_FAILED, SIGNTX_SUCCESS,
   SIGNMESSAGE_ATTEMPT, SIGNMESSAGE_FAILED, SIGNMESSAGE_SUCCESS,
   VALIDATEMASTERPUBKEY_SUCCESS
 } from "./ControlActions";
-
-const hardeningConstant = 0x80000000;
-
-// Right now (2018-07-06) dcrwallet only supports a single account on watch only
-// wallets. Therefore we are limited to using this single account when signing
-// transactions via trezor.
-const WALLET_ACCOUNT = 0;
-
-function addressPath(index, branch, account, coinType) {
-  return [
-    (44 | hardeningConstant) >>> 0, // purpose
-    ((coinType || 0)| hardeningConstant) >>> 0, // coin type
-    ((account || 0) | hardeningConstant) >>> 0, // account
-    (branch || 0) >>> 0, // branch
-    index >>> 0  // index
-  ];
-}
-
-function accountPath(account, coinType) {
-  return [
-    (44 | hardeningConstant) >>> 0, // purpose
-    ((coinType || 0)| hardeningConstant) >>> 0, // coin type
-    ((account || 0) | hardeningConstant) >>> 0  // account
-  ];
-}
+import { getAmountFromTxInputs, getTxFromInputs } from "./TransactionActions";
 
 export const TRZ_TREZOR_ENABLED = "TRZ_TREZOR_ENABLED";
 
@@ -137,7 +112,7 @@ export const loadDeviceList = () => (dispatch, getState) => {
     devList.on("disconnect", device => {
       debug && console.log("disconnect", Object.keys(devList.devices), device);
       const currentDevice = getState().trezor.device;
-      if (currentDevice && device.originalDescriptor.path === currentDevice.originalDescriptor.path ) {
+      if (currentDevice && device.originalDescriptor.path === currentDevice.originalDescriptor.path) {
         const devicePaths = Object.keys(devList.devices);
 
         // we were using the device that was just disconnected. Pick a new
@@ -331,7 +306,7 @@ const checkTrezorIsDcrwallet = (session) => async (dispatch, getState) => {
 export const signTransactionAttemptTrezor = (rawUnsigTx, constructTxResponse) => async (dispatch, getState) => {
   dispatch({ type: SIGNTX_ATTEMPT });
 
-  const { grpc: { decodeMessageService, walletService }, trezor: { debug } } = getState();
+  const { grpc: { walletService }, trezor: { debug } } = getState();
   const chainParams = selectors.chainParams(getState());
 
   const device = selectors.trezorDevice(getState());
@@ -343,20 +318,25 @@ export const signTransactionAttemptTrezor = (rawUnsigTx, constructTxResponse) =>
   debug && console.log("construct tx response", constructTxResponse);
 
   try {
-    const decodedUnsigTxResp = await wallet.decodeTransaction(decodeMessageService, rawUnsigTx);
-    const decodedUnsigTx = decodedUnsigTxResp.getTransaction();
-    const inputTxs = await wallet.getInputTransactions(walletService,
-      decodeMessageService, decodedUnsigTx);
-    const refTxs = inputTxs.map(walletTxToRefTx);
-
     const changeIndex = constructTxResponse.getChangeIndex();
-    const txInfo = await dispatch(walletTxToBtcjsTx(decodedUnsigTx,
-      changeIndex, inputTxs));
+
+    const decodedUnsigTxResp = wallet.decodeRawTransaction(Buffer.from(rawUnsigTx), chainParams);
+    const unsignedTx = await dispatch(getAmountFromTxInputs(decodedUnsigTxResp));
+    const txCompletedInputs = await dispatch(getAmountFromTxInputs(unsignedTx));
+    const inputTxs = await dispatch(getTxFromInputs(unsignedTx));
+    const { inputs, outputs } = await walletTxToBtcjsTx(
+      walletService, chainParams, txCompletedInputs, inputTxs, changeIndex
+    );
+
+    const refTxs = await Promise.all(inputTxs.map(async (inpTx) => {
+      const completeTx = await dispatch(getAmountFromTxInputs(inpTx));
+      return walletTxToRefTx(walletService, completeTx);
+    }));
 
     const signedRaw = await deviceRun(dispatch, getState, device, async session => {
       await dispatch(checkTrezorIsDcrwallet(session));
 
-      const signedResp = await session.signTx(txInfo.inputs, txInfo.outputs,
+      const signedResp = await session.signTx(inputs, outputs,
         refTxs, chainParams.trezorCoinName, 0);
       return signedResp.message.serialized.serialized_tx;
     });
@@ -404,128 +384,7 @@ export const signMessageAttemptTrezor = (address, message) => async (dispatch, g
   } catch (error) {
     dispatch({ error, type: SIGNMESSAGE_FAILED });
   }
-
 };
-
-// walletTxToBtcjsTx converts a tx decoded by the decred wallet (ie,
-// returned from the decodeRawTransaction call) into a bitcoinjs-compatible
-// transaction (to be used in trezor)
-export const walletTxToBtcjsTx = (tx, changeIndex, inputTxs) => async (dispatch, getState) => {
-  const { grpc: { walletService } } = getState();
-  const chainParams = selectors.chainParams(getState());
-
-  const inputTxsMap = inputTxs.reduce((m, tx) => {
-    m[rawHashToHex(tx.getTransactionHash())] = tx;
-    return m;
-  }, {});
-
-  const inputs = [];
-  for (const inp of tx.getInputsList()) {
-    const inputTx = inputTxsMap[rawHashToHex(inp.getPreviousTransactionHash())];
-    if (!inputTx) throw "Cannot sign transaction without knowing source tx " +
-      rawHashToHex(inp.getPreviousTransactionHash());
-
-    const inputTxOut = inputTx.getOutputsList()[inp.getPreviousTransactionIndex()];
-    if (!inputTxOut) throw sprintf("Trying to use unknown outpoint %s:%d as input",
-      rawHashToHex(inp.getPreviousTransactionHash()), inp.getPreviousTransactionIndex());
-
-    const addr = inputTxOut.getAddressesList()[0];
-    if (!addr) throw sprintf("Outpoint %s:%d does not have addresses.",
-      rawHashToHex(inp.getPreviousTransactionHash()), inp.getPreviousTransactionIndex());
-
-    const addrValidResp = await wallet.validateAddress(walletService, addr);
-    if (!addrValidResp.getIsValid()) throw "Input has an invalid address " + addr;
-
-    // Trezor firmware (mcu) currently (2018-06-25) only support signing
-    // when all inputs of the transaction are from the wallet. This happens
-    // due to the fact that trezor firmware re-calculates the source
-    // pkscript given the address_n of the input, instead of using it (the
-    // pkscript) directly when hashing the tx prior to signing. This needs
-    // to be changed so that we can perform more advanced types of
-    // transactions.
-    if (!addrValidResp.getIsMine()) throw "Trezor only supports signing when all inputs are from the wallet.";
-
-    const addrIndex = addrValidResp.getIndex();
-    const addrBranch = addrValidResp.getIsInternal() ? 1 : 0;
-    inputs.push({
-      prev_hash: rawHashToHex(inp.getPreviousTransactionHash()),
-      prev_index: inp.getPreviousTransactionIndex(),
-      amount: inp.getAmountIn(),
-      sequence: inp.getSequence(),
-      address_n: addressPath(addrIndex, addrBranch, WALLET_ACCOUNT,
-        chainParams.HDCoinType),
-      decred_tree: inp.getTree()
-    });
-  }
-
-  const outputs = [];
-  for (const outp of tx.getOutputsList()) {
-    if (outp.getAddressesList().length != 1) {
-      // TODO: this will be true on OP_RETURNs. Support those.
-      throw "Output has different number of addresses than expected";
-    }
-
-    let addr = outp.getAddressesList()[0];
-    const addrValidResp = await wallet.validateAddress(walletService, addr);
-    if (!addrValidResp.getIsValid()) throw "Not a valid address: " + addr;
-    let address_n = null;
-
-    if (outp.getIndex() === changeIndex && addrValidResp.getIsMine()) {
-      const addrIndex = addrValidResp.getIndex();
-      const addrBranch = addrValidResp.getIsInternal() ? 1 : 0;
-      address_n = addressPath(addrIndex, addrBranch, WALLET_ACCOUNT,
-        chainParams.HDCoinType);
-      addr = null;
-    }
-
-    outputs.push({
-      amount: outp.getValue(),
-      script_type: "PAYTOADDRESS", // needs to change on OP_RETURNs
-      address: addr,
-      address_n: address_n,
-      decred_script_version: outp.getVersion()
-    });
-  }
-
-  const txInfo = {
-    lock_time: tx.getLockTime(),
-    version: tx.getVersion(),
-    expiry: tx.getExpiry(),
-    inputs,
-    outputs
-  };
-
-  return txInfo;
-};
-
-// walletTxToRefTx converts a tx decoded by the decred wallet into a trezor
-// RefTransaction object to be used with SignTx.
-export function walletTxToRefTx(tx) {
-  const inputs = tx.getInputsList().map(inp => ({
-    amount: inp.getAmountIn(),
-    prev_hash: rawHashToHex(inp.getPreviousTransactionHash()),
-    prev_index: inp.getPreviousTransactionIndex(),
-    decred_tree: inp.getTree(),
-    sequence: inp.getSequence()
-  }));
-
-  const bin_outputs = tx.getOutputsList().map(outp => ({
-    amount: outp.getValue(),
-    script_pubkey: rawToHex(outp.getScript()),
-    decred_script_version: outp.getVersion()
-  }));
-
-  const txInfo = {
-    hash: rawHashToHex(tx.getTransactionHash()),
-    lock_time: tx.getLockTime(),
-    version: tx.getVersion(),
-    expiry: tx.getExpiry(),
-    inputs,
-    bin_outputs
-  };
-
-  return txInfo;
-}
 
 export const TRZ_TOGGLEPINPROTECTION_ATTEMPT = "TRZ_TOGGLEPINPROTECTION_ATTEMPT";
 export const TRZ_TOGGLEPINPROTECTION_FAILED = "TRZ_TOGGLEPINPROTECTION_FAILED";
@@ -535,7 +394,7 @@ export const togglePinProtection = () => async (dispatch, getState) => {
 
   const device = selectors.trezorDevice(getState());
   if (!device) {
-    dispatch({ error: "Device not connected", type:  TRZ_TOGGLEPINPROTECTION_FAILED });
+    dispatch({ error: "Device not connected", type: TRZ_TOGGLEPINPROTECTION_FAILED });
     return;
   }
 
@@ -553,14 +412,14 @@ export const togglePinProtection = () => async (dispatch, getState) => {
 };
 
 export const TRZ_TOGGLEPASSPHRASEPROTECTION_ATTEMPT = "TRZ_TOGGLEPASSPHRASEPROTECTION_ATTEMPT";
-export const TRZ_TOGGLEPASSPHRASEPROTECTION_FAILED =  "TRZ_TOGGLEPASSPHRASEPROTECTION_FAILED";
+export const TRZ_TOGGLEPASSPHRASEPROTECTION_FAILED = "TRZ_TOGGLEPASSPHRASEPROTECTION_FAILED";
 export const TRZ_TOGGLEPASSPHRASEPROTECTION_SUCCESS = "TRZ_TOGGLEPASSPHRASEPROTECTION_SUCCESS";
 
 export const togglePassPhraseProtection = () => async (dispatch, getState) => {
 
   const device = selectors.trezorDevice(getState());
   if (!device) {
-    dispatch({ error: "Device not connected", type:  TRZ_TOGGLEPASSPHRASEPROTECTION_FAILED });
+    dispatch({ error: "Device not connected", type: TRZ_TOGGLEPASSPHRASEPROTECTION_FAILED });
     return;
   }
 
@@ -578,13 +437,13 @@ export const togglePassPhraseProtection = () => async (dispatch, getState) => {
 };
 
 export const TRZ_CHANGEHOMESCREEN_ATTEMPT = "TRZ_CHANGEHOMESCREEN_ATTEMPT";
-export const TRZ_CHANGEHOMESCREEN_FAILED =  "TRZ_CHANGEHOMESCREEN_FAILED";
+export const TRZ_CHANGEHOMESCREEN_FAILED = "TRZ_CHANGEHOMESCREEN_FAILED";
 export const TRZ_CHANGEHOMESCREEN_SUCCESS = "TRZ_CHANGEHOMESCREEN_SUCCESS";
 
 export const changeToDecredHomeScreen = () => async (dispatch, getState) => {
   const device = selectors.trezorDevice(getState());
   if (!device) {
-    dispatch({ error: "Device not connected", type:  TRZ_TOGGLEPASSPHRASEPROTECTION_FAILED });
+    dispatch({ error: "Device not connected", type: TRZ_TOGGLEPASSPHRASEPROTECTION_FAILED });
     return;
   }
 
@@ -601,13 +460,13 @@ export const changeToDecredHomeScreen = () => async (dispatch, getState) => {
 };
 
 export const TRZ_CHANGELABEL_ATTEMPT = "TRZ_CHANGELABEL_ATTEMPT";
-export const TRZ_CHANGELABEL_FAILED =  "TRZ_CHANGELABEL_FAILED";
+export const TRZ_CHANGELABEL_FAILED = "TRZ_CHANGELABEL_FAILED";
 export const TRZ_CHANGELABEL_SUCCESS = "TRZ_CHANGELABEL_SUCCESS";
 
 export const changeLabel = (label) => async (dispatch, getState) => {
   const device = selectors.trezorDevice(getState());
   if (!device) {
-    dispatch({ error: "Device not connected", type:  TRZ_CHANGELABEL_FAILED });
+    dispatch({ error: "Device not connected", type: TRZ_CHANGELABEL_FAILED });
     return;
   }
 
@@ -624,13 +483,13 @@ export const changeLabel = (label) => async (dispatch, getState) => {
 };
 
 export const TRZ_WIPEDEVICE_ATTEMPT = "TRZ_WIPEDEVICE_ATTEMPT";
-export const TRZ_WIPEDEVICE_FAILED =  "TRZ_WIPEDEVICE_FAILED";
+export const TRZ_WIPEDEVICE_FAILED = "TRZ_WIPEDEVICE_FAILED";
 export const TRZ_WIPEDEVICE_SUCCESS = "TRZ_WIPEDEVICE_SUCCESS";
 
 export const wipeDevice = () => async (dispatch, getState) => {
   const device = selectors.trezorDevice(getState());
   if (!device) {
-    dispatch({ error: "Device not connected", type:  TRZ_WIPEDEVICE_FAILED });
+    dispatch({ error: "Device not connected", type: TRZ_WIPEDEVICE_FAILED });
     return;
   }
 
@@ -647,13 +506,13 @@ export const wipeDevice = () => async (dispatch, getState) => {
 };
 
 export const TRZ_RECOVERDEVICE_ATTEMPT = "TRZ_RECOVERDEVICE_ATTEMPT";
-export const TRZ_RECOVERDEVICE_FAILED =  "TRZ_RECOVERDEVICE_FAILED";
+export const TRZ_RECOVERDEVICE_FAILED = "TRZ_RECOVERDEVICE_FAILED";
 export const TRZ_RECOVERDEVICE_SUCCESS = "TRZ_RECOVERDEVICE_SUCCESS";
 
 export const recoverDevice = () => async (dispatch, getState) => {
   const device = selectors.trezorDevice(getState());
   if (!device) {
-    dispatch({ error: "Device not connected", type:  TRZ_RECOVERDEVICE_FAILED });
+    dispatch({ error: "Device not connected", type: TRZ_RECOVERDEVICE_FAILED });
     return;
   }
 
@@ -678,13 +537,13 @@ export const recoverDevice = () => async (dispatch, getState) => {
 };
 
 export const TRZ_INITDEVICE_ATTEMPT = "TRZ_INITDEVICE_ATTEMPT";
-export const TRZ_INITDEVICE_FAILED =  "TRZ_INITDEVICE_FAILED";
+export const TRZ_INITDEVICE_FAILED = "TRZ_INITDEVICE_FAILED";
 export const TRZ_INITDEVICE_SUCCESS = "TRZ_INITDEVICE_SUCCESS";
 
 export const initDevice = () => async (dispatch, getState) => {
   const device = selectors.trezorDevice(getState());
   if (!device) {
-    dispatch({ error: "Device not connected", type:  TRZ_RECOVERDEVICE_FAILED });
+    dispatch({ error: "Device not connected", type: TRZ_RECOVERDEVICE_FAILED });
     return;
   }
 
@@ -708,13 +567,13 @@ export const initDevice = () => async (dispatch, getState) => {
 };
 
 export const TRZ_UPDATEFIRMWARE_ATTEMPT = "TRZ_UPDATEFIRMWARE_ATTEMPT";
-export const TRZ_UPDATEFIRMWARE_FAILED =  "TRZ_UPDATEFIRMWARE_FAILED";
+export const TRZ_UPDATEFIRMWARE_FAILED = "TRZ_UPDATEFIRMWARE_FAILED";
 export const TRZ_UPDATEFIRMWARE_SUCCESS = "TRZ_UPDATEFIRMWARE_SUCCESS";
 
 export const updateFirmware = (path) => async (dispatch, getState) => {
   const device = selectors.trezorDevice(getState());
   if (!device) {
-    dispatch({ error: "Device not connected", type:  TRZ_UPDATEFIRMWARE_FAILED });
+    dispatch({ error: "Device not connected", type: TRZ_UPDATEFIRMWARE_FAILED });
     return;
   }
 
@@ -742,7 +601,7 @@ export const getWalletCreationMasterPubKey = () => async (dispatch, getState) =>
 
   const device = selectors.trezorDevice(getState());
   if (!device) {
-    dispatch({ error: "Device not connected", type:  TRZ_GETWALLETCREATIONMASTERPUBKEY_FAILED });
+    dispatch({ error: "Device not connected", type: TRZ_GETWALLETCREATIONMASTERPUBKEY_FAILED });
     return;
   }
 
@@ -761,7 +620,7 @@ export const getWalletCreationMasterPubKey = () => async (dispatch, getState) =>
       throw new Error("Trezor Model One needs to run on firmware >= 1.8.0. Found " +
         features.major_version + "." + features.minor_version + "." + features.patch_version);
     } else if (features.model == "T" && versionLessThan(2, 1)) {
-      throw new Error("Trezor Model T needs to run on firmware >= 2.1.0. Found "+
+      throw new Error("Trezor Model T needs to run on firmware >= 2.1.0. Found " +
         features.major_version + "." + features.minor_version + "." + features.patch_version);
     } else if (!features.model) {
       throw new Error("Unknown firmware model/version");
@@ -777,7 +636,7 @@ export const getWalletCreationMasterPubKey = () => async (dispatch, getState) =>
     dispatch({ type: VALIDATEMASTERPUBKEY_SUCCESS, masterPubKey });
     dispatch({ type: TRZ_GETWALLETCREATIONMASTERPUBKEY_SUCCESS });
   } catch (error) {
-    dispatch({ error, type:  TRZ_GETWALLETCREATIONMASTERPUBKEY_FAILED });
+    dispatch({ error, type: TRZ_GETWALLETCREATIONMASTERPUBKEY_FAILED });
     throw error;
   }
 };

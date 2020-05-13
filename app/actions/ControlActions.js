@@ -190,13 +190,14 @@ export const PUBLISHTX_SUCCESS = "PUBLISHTX_SUCCESS";
 
 export const publishTransactionAttempt = (tx) => (dispatch, getState) => {
   dispatch({ type: PUBLISHTX_ATTEMPT });
+  const chainParams = sel.chainParams(getState());
   return wallet.publishTransaction(sel.walletService(getState()), tx)
     .then(res => {
       // If one of the outputs of the just published tx is one of the recorded
       // change scripts, clear it as to prevent address reuse. This is needed
       // due to dcrwallet#1622.
       const rawTx = Buffer.from(tx, "hex");
-      const decoded = wallet.decodeRawTransaction(rawTx);
+      const decoded = wallet.decodeRawTransaction(rawTx, chainParams);
       const changeScriptByAccount = getState().control.changeScriptByAccount || {};
       const newChangeScriptByAccount = {};
       Object.keys(changeScriptByAccount).forEach(account => {
@@ -377,6 +378,7 @@ export const constructTransactionAttempt = (account, confirmations, outputs, all
   }
 
   dispatch({ type: CONSTRUCTTX_ATTEMPT });
+  const chainParams = sel.chainParams(getState());
   const { walletService } = getState().grpc;
   walletService.constructTransaction(request,
     function(error, constructTxResponse) {
@@ -388,7 +390,7 @@ export const constructTransactionAttempt = (account, confirmations, outputs, all
           // branch using the wrap gap policy so that change addresses can be
           // regenerated again.
           // We'll still error out to let the user know wrapping has occurred.
-          wallet.getNextAddress(sel.walletService(getState()), parseInt(account), 1);
+          wallet.getNextAddress(walletService, parseInt(account), 1);
           dispatch({ error, type: CONSTRUCTTX_FAILED });
         } else {
           dispatch({ error, type: CONSTRUCTTX_FAILED });
@@ -404,7 +406,7 @@ export const constructTransactionAttempt = (account, confirmations, outputs, all
         const changeIndex = constructTxResponse.getChangeIndex();
         if (changeIndex > -1) {
           const rawTx = Buffer.from(constructTxResponse.getUnsignedTransaction());
-          const decoded = wallet.decodeRawTransaction(rawTx);
+          const decoded = wallet.decodeRawTransaction(rawTx, chainParams);
           changeScriptByAccount[account] = decoded.outputs[changeIndex].script;
         }
 
