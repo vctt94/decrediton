@@ -1,0 +1,201 @@
+// import {
+//   isValidAddress,
+//   ERR_INVALID_ADDR_EMPTY,
+//   ERR_INVALID_ADDR_TOOSHORT,
+//   ERR_INVALID_ADDR_TOOLONG,
+//   ERR_INVALID_ADDR_NETWORKPREFIX,
+//   ERR_INVALID_ADDR_CHECKSUM
+// } from "../../../app/helpers/addresses";
+
+// // multiTxPrefix is a MsgTx prefix with an input and output and used in various tests.
+// const multiTxPrefix = {
+// 	SerType: 1, // TxSerializeNoWitness,
+// 	Version: 1,
+// 	TxIn: [
+//     {
+// 			PreviousOutPoint: OutPoint{
+// 				Hash:  chainhash.Hash{},
+// 				Index: 0xffffffff,
+// 			},
+// 			Sequence: 0xffffffff,
+// 		}
+//   ],
+// 	TxOut: [
+//     {
+// 			Value:   0x12a05f200,
+// 			Version: 0xabab,
+// 			PkScript: []byte{
+// 				0x41, // OP_DATA_65
+// 				0x04, 0xd6, 0x4b, 0xdf, 0xd0, 0x9e, 0xb1, 0xc5,
+// 				0xfe, 0x29, 0x5a, 0xbd, 0xeb, 0x1d, 0xca, 0x42,
+// 				0x81, 0xbe, 0x98, 0x8e, 0x2d, 0xa0, 0xb6, 0xc1,
+// 				0xc6, 0xa5, 0x9d, 0xc2, 0x26, 0xc2, 0x86, 0x24,
+// 				0xe1, 0x81, 0x75, 0xe8, 0x51, 0xc9, 0x6b, 0x97,
+// 				0x3d, 0x81, 0xb0, 0x1c, 0xc3, 0x1f, 0x04, 0x78,
+// 				0x34, 0xbc, 0x06, 0xd6, 0xd6, 0xed, 0xf6, 0x20,
+// 				0xd1, 0x84, 0x24, 0x1a, 0x6a, 0xed, 0x8b, 0x63,
+// 				0xa6, // 65-byte signature
+// 				0xac, // OP_CHECKSIG
+// 			},
+//     },
+//     {
+// 			Value:   0x5f5e100,
+// 			Version: 0xbcbc,
+// 			PkScript: []byte{
+// 				0x41, // OP_DATA_65
+// 				0x04, 0xd6, 0x4b, 0xdf, 0xd0, 0x9e, 0xb1, 0xc5,
+// 				0xfe, 0x29, 0x5a, 0xbd, 0xeb, 0x1d, 0xca, 0x42,
+// 				0x81, 0xbe, 0x98, 0x8e, 0x2d, 0xa0, 0xb6, 0xc1,
+// 				0xc6, 0xa5, 0x9d, 0xc2, 0x26, 0xc2, 0x86, 0x24,
+// 				0xe1, 0x81, 0x75, 0xe8, 0x51, 0xc9, 0x6b, 0x97,
+// 				0x3d, 0x81, 0xb0, 0x1c, 0xc3, 0x1f, 0x04, 0x78,
+// 				0x34, 0xbc, 0x06, 0xd6, 0xd6, 0xed, 0xf6, 0x20,
+// 				0xd1, 0x84, 0x24, 0x1a, 0x6a, 0xed, 0x8b, 0x63,
+// 				0xa6, // 65-byte signature
+// 				0xac, // OP_CHECKSIG
+// 			},
+// 		},
+//   ],
+// 	LockTime: 0,
+// 	Expiry:   0,
+// }
+
+// // multiTxPrefixEncoded is the wire encoded bytes for multiTx using protocol
+// // version 1 and is used in the various tests.
+// const multiTxPrefixEncoded = [
+// 	0x01, 0x00, 0x01, 0x00, // Version [0]
+// 	0x01,                                           // Varint for number of input transactions [4]
+// 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // [5]
+// 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+// 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+// 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Previous output hash
+// 	0xff, 0xff, 0xff, 0xff, // Previous output index [37]
+// 	0x00,                   // Previous output tree [41]
+// 	0xff, 0xff, 0xff, 0xff, // Sequence [43]
+// 	0x02,                                           // Varint for number of output transactions [47]
+// 	0x00, 0xf2, 0x05, 0x2a, 0x01, 0x00, 0x00, 0x00, // Transaction amount [48]
+// 	0xab, 0xab, // Script version
+// 	0x43, // Varint for length of pk script [56]
+// 	0x41, // OP_DATA_65 [57]
+// 	0x04, 0xd6, 0x4b, 0xdf, 0xd0, 0x9e, 0xb1, 0xc5,
+// 	0xfe, 0x29, 0x5a, 0xbd, 0xeb, 0x1d, 0xca, 0x42,
+// 	0x81, 0xbe, 0x98, 0x8e, 0x2d, 0xa0, 0xb6, 0xc1,
+// 	0xc6, 0xa5, 0x9d, 0xc2, 0x26, 0xc2, 0x86, 0x24,
+// 	0xe1, 0x81, 0x75, 0xe8, 0x51, 0xc9, 0x6b, 0x97,
+// 	0x3d, 0x81, 0xb0, 0x1c, 0xc3, 0x1f, 0x04, 0x78,
+// 	0x34, 0xbc, 0x06, 0xd6, 0xd6, 0xed, 0xf6, 0x20,
+// 	0xd1, 0x84, 0x24, 0x1a, 0x6a, 0xed, 0x8b, 0x63,
+// 	0xa6,                                           // 65-byte signature
+// 	0xac,                                           // OP_CHECKSIG
+// 	0x00, 0xe1, 0xf5, 0x05, 0x00, 0x00, 0x00, 0x00, // Transaction amount [124]
+// 	0xbc, 0xbc, // Script version
+// 	0x43, // Varint for length of pk script [132]
+// 	0x41, // OP_DATA_65
+// 	0x04, 0xd6, 0x4b, 0xdf, 0xd0, 0x9e, 0xb1, 0xc5,
+// 	0xfe, 0x29, 0x5a, 0xbd, 0xeb, 0x1d, 0xca, 0x42,
+// 	0x81, 0xbe, 0x98, 0x8e, 0x2d, 0xa0, 0xb6, 0xc1,
+// 	0xc6, 0xa5, 0x9d, 0xc2, 0x26, 0xc2, 0x86, 0x24,
+// 	0xe1, 0x81, 0x75, 0xe8, 0x51, 0xc9, 0x6b, 0x97,
+// 	0x3d, 0x81, 0xb0, 0x1c, 0xc3, 0x1f, 0x04, 0x78,
+// 	0x34, 0xbc, 0x06, 0xd6, 0xd6, 0xed, 0xf6, 0x20,
+// 	0xd1, 0x84, 0x24, 0x1a, 0x6a, 0xed, 0x8b, 0x63,
+// 	0xa6,                   // 65-byte signature
+// 	0xac,                   // OP_CHECKSIG
+// 	0x00, 0x00, 0x00, 0x00, // Lock time [198]
+// 	0x00, 0x00, 0x00, 0x00, // Expiry [202]
+// ];
+
+// // TestTxSerializePrefix tests MsgTx serialize and deserialize.
+// func TestTxSerializePrefix(t * testing.T) {
+//   noTx:= NewMsgTx()
+//   noTx.SerType = TxSerializeNoWitness
+//   noTx.Version = 1
+//   noTxEncoded:= []byte{
+//     0x01, 0x00, 0x01, 0x00, // Version
+//       0x00,                   // Varint for number of input transactions
+//       0x00,                   // Varint for number of output transactions
+//       0x00, 0x00, 0x00, 0x00, // Lock time
+//       0x00, 0x00, 0x00, 0x00, // Expiry
+// 	}
+
+//   tests:= []struct {
+// 		in           * MsgTx // Message to encode
+//     out * MsgTx // Expected decoded message
+//     buf[]byte // Serialized data
+//     pkScriptLocs[]int  // Expected output script locations
+//   } {
+//     // No transactions.
+//     {
+//       noTx,
+//         noTx,
+//         noTxEncoded,
+//         nil,
+// 		},
+
+//     // Multiple transactions.
+//     {
+//       multiTxPrefix,
+//         multiTxPrefix,
+//         multiTxPrefixEncoded,
+//         multiTxPkScriptLocs,
+// 		},
+//   }
+
+//   fmt.Printf("%+v\n\n", tests.in)
+//   t.Logf("Running %d tests", len(tests))
+//   for i, test := range tests {
+//     // Serialize the transaction.
+//     buf:= bytes.NewBuffer(make([]byte, 0, test.in.SerializeSize()))
+//     err:= test.in.Serialize(buf)
+//     if err != nil {
+//       t.Errorf("Serialize #%d error %v", i, err)
+//       continue
+//     }
+//     if !bytes.Equal(buf.Bytes(), test.buf) {
+//       t.Errorf("Serialize #%d\n got: %s want: %s", i,
+//         spew.Sdump(buf.Bytes()), spew.Sdump(test.buf))
+//       continue
+//     }
+
+//     // Test SerializeSize.
+//     sz:= test.in.SerializeSize()
+//     actualSz:= len(buf.Bytes())
+//     if sz != actualSz {
+//       t.Errorf("Wrong serialize size #%d\n got: %d want: %d", i,
+//         sz, actualSz)
+//     }
+
+//     // Deserialize the transaction.
+//     var tx MsgTx
+//     rbuf:= bytes.NewReader(test.buf)
+//     err = tx.Deserialize(rbuf)
+//     if err != nil {
+//       t.Errorf("Deserialize #%d error %v", i, err)
+//       continue
+//     }
+//     if !reflect.DeepEqual(& tx, test.out) {
+//       t.Errorf("Deserialize #%d\n got: %s want: %s", i,
+//         spew.Sdump(& tx), spew.Sdump(test.out))
+//       continue
+//     }
+
+//     // Ensure the public key script locations are accurate.
+//     pkScriptLocs:= test.in.PkScriptLocs()
+//     if !reflect.DeepEqual(pkScriptLocs, test.pkScriptLocs) {
+//       t.Errorf("PkScriptLocs #%d\n got: %s want: %s", i,
+//         spew.Sdump(pkScriptLocs),
+//         spew.Sdump(test.pkScriptLocs))
+//       continue
+//     }
+//     for j, loc := range pkScriptLocs {
+//       wantPkScript:= test.in.TxOut[j].PkScript
+//       gotPkScript:= test.buf[loc : loc + len(wantPkScript)]
+//       if !bytes.Equal(gotPkScript, wantPkScript) {
+//         t.Errorf("PkScriptLocs #%d:%d\n unexpected " +
+//           "script got: %s want: %s", i, j,
+//           spew.Sdump(gotPkScript),
+//           spew.Sdump(wantPkScript))
+//       }
+//     }
+//   }
+// }
