@@ -4,7 +4,6 @@ import {
 } from "./fp";
 import { appLocaleFromElectronLocale } from "./i18n/locales";
 import { reverseHash } from "./helpers/byteActions";
-import { TRANSACTION_TYPES }  from "wallet/service";
 import { MainNetParams, TestNetParams } from "constants";
 import { /*TicketTypes,*/ decodeVoteScript } from "./helpers/tickets";
 import { EXTERNALREQUEST_STAKEPOOL_LISTING, EXTERNALREQUEST_POLITEIA, EXTERNALREQUEST_DCRDATA } from "main_dev/externalRequests";
@@ -95,10 +94,14 @@ export const getWalletName = get([ "daemon", "walletName" ]);
 export const getSelectedWallet = get([ "walletLoader", "selectedWallet" ]);
 
 export const balances = or(get([ "grpc", "balances" ]), () => []);
+
+// dcrwallet grpc services
 export const walletService = get([ "grpc", "walletService" ]);
 export const agendaService = get([ "grpc", "agendaService" ]);
 export const votingService = get([ "grpc", "votingService" ]);
 export const accountMixerService = get([ "grpc", "accountMixerService" ]);
+
+// TODO review selectors that are not being used anymore.
 export const getBalanceRequestAttempt = get([ "grpc", "getBalanceRequestAttempt" ]);
 export const getAccountsResponse = get([ "grpc", "getAccountsResponse" ]);
 export const getNetworkResponse = get([ "grpc", "getNetworkResponse" ]);
@@ -168,8 +171,6 @@ export const locale = createSelector(
   }
 );
 
-const getTxTypeStr = type => (TRANSACTION_TYPES)[type];
-
 export const txURLBuilder= createSelector(
   [ network ],
   (network) =>
@@ -190,9 +191,11 @@ export const txOutURLBuilder = createSelector(
 
 export const decodedTransactions = get([ "grpc", "decodedTransactions" ]);
 
+export const chainParams = compose(isTestNet => isTestNet ? TestNetParams : MainNetParams, isTestNet);
+
 export const ticketNormalizer = createSelector(
-  [ network, accounts ],
-  (network, accounts) => {
+  [ network, accounts, chainParams  ],
+  (network, accounts, chainParams) => {
     return ticket => {
       const findAccount = num => accounts.find(account => account.getAccountNumber() === num);
       const getAccountName = num => (act => act ? act.getAccountName() : "")(findAccount(num));
@@ -211,7 +214,7 @@ export const ticketNormalizer = createSelector(
       } else {
         // we don't have a credit when we don't have the voting rights (unimported
         // stakepool script, solo voting ticket, split ticket, etc)
-        const decodedTicketTx = wallet.decodeRawTransaction(Buffer.from(ticketTx.getTransaction()));
+        const decodedTicketTx = wallet.decodeRawTransaction(Buffer.from(ticketTx.getTransaction()), chainParams);
         ticketPrice = decodedTicketTx.outputs[0].value;
       }
 
@@ -241,7 +244,7 @@ export const ticketNormalizer = createSelector(
 
         ticketStakeRewards = ticketReward / ticketInvestment;
 
-        const decodedSpenderTx = wallet.decodeRawTransaction(Buffer.from(spenderTx.getTransaction()));
+        const decodedSpenderTx = wallet.decodeRawTransaction(Buffer.from(spenderTx.getTransaction()), chainParams);
 
         // Check pool fee. If there is a debit at index=0 of the ticket but not
         // a corresponding credit at the expected index on the spender, then
@@ -283,7 +286,7 @@ export const ticketNormalizer = createSelector(
         status: ticket.status,
         ticketRawTx: Buffer.from(ticketTx.getTransaction()).toString("hex"),
         spenderRawTx: hasSpender ? Buffer.from(spenderTx.getTransaction()).toString("hex") : null,
-        originalTicket: ticket,
+        tx: ticketTx,
         isPending,
         accountName
       };
@@ -294,7 +297,6 @@ export const ticketNormalizer = createSelector(
 export const noMoreTickets = get([ "grpc", "noMoreTickets" ]);
 export const ticketsFilter = get([ "grpc", "ticketsFilter" ]);
 export const getTicketsProgressStartRequestHeight = get([ "grpc", "getTicketsProgressStartRequestHeight" ]);
-export const ticketsNormalizer = createSelector([ ticketNormalizer ], map);
 export const tickets = get([ "grpc", "tickets" ]);
 export const numTicketsToBuy = get([ "control", "numTicketsToBuy" ]);
 
@@ -302,28 +304,18 @@ export const numTicketsToBuy = get([ "control", "numTicketsToBuy" ]);
 // tickets".
 export const hasTickets = compose(t => t && t.length > 0, tickets);
 
-// aux map from ticket/spender hash => ticket info
-const txHashToTicket = createSelector(
-  [ tickets ],
-  reduce((m, t) => {
-    m[t.txHash] = t;
-    m[t.spenderHash] = t;
-    return m;
-  }, {})
-);
-
+// transactionNormalizer normalizes regular decred's regular transactions
 export const transactionNormalizer = createSelector(
   [ accounts, txURLBuilder, blockURLBuilder ],
   (accounts, txURLBuilder, blockURLBuilder) => {
     const findAccount = num => accounts.find(account => account.getAccountNumber() === num);
     const getAccountName = num => (act => act ? act.getAccountName() : "")(findAccount(num));
     return origTx => {
-      const { blockHash } = origTx;
-      const type = origTx.type || (origTx.getTransactionType ? origTx.getTransactionType() : null);
-      let txInfo = origTx.tx ? origTx : {};
-      let timestamp = origTx.timestamp;
-      const tx = origTx.tx || origTx;
-      timestamp = timestamp || tx.timestamp;
+      const { blockHash, tx, height, type, txType, txTimestamp, txHash, rawTx, outputs } = origTx;
+      const txUrl = txURLBuilder(txHash);
+      const txBlockHash = blockHash ? reverseHash(Buffer.from(blockHash).toString("hex")) : null;
+      const txBlockUrl = blockURLBuilder(txBlockHash);
+
       let totalFundsReceived = 0;
       let totalChange = 0;
       let addressStr = [];
@@ -331,8 +323,6 @@ export const transactionNormalizer = createSelector(
       let creditedAccount;
       const txInputs = [];
       const txOutputs = [];
-      const txHash = reverseHash(Buffer.from(tx.getHash()).toString("hex"));
-      const txBlockHash = blockHash ? reverseHash(Buffer.from(blockHash).toString("hex")) : null;
       const fee = tx.getFee();
       let debitedAccountName, creditedAccountName;
       const totalDebit = tx.getDebitsList().reduce((total, debit) => {
@@ -375,40 +365,61 @@ export const transactionNormalizer = createSelector(
             txAccountName: getAccountName(creditedAccount)
           };
 
-      let stakeInfo = {};
-      if (origTx.ticketPrice) stakeInfo.ticketPrice = origTx.ticketPrice;
-      if (origTx.enterTimestamp) stakeInfo.enterTimestamp = origTx.enterTimestamp;
-      if (origTx.leaveTimestamp) stakeInfo.leaveTimestamp = origTx.leaveTimestamp;
-      if (origTx.ticketReward) stakeInfo.ticketReward = origTx.ticketReward;
-
       return {
-        txUrl: txURLBuilder(txHash),
-        txBlockUrl: txBlockHash ? blockURLBuilder(txBlockHash) : null,
+        txUrl,
+        txBlockUrl,
         txHash,
-        txHeight: txInfo.height,
-        txType: getTxTypeStr(type),
-        txTimestamp: timestamp,
-        isPending: !timestamp,
+        txHeight: height,
+        txType,
+        txTimestamp,
+        isPending: !txTimestamp,
         txFee: fee,
         txInputs,
         txOutputs,
         txBlockHash,
         txNumericType: type,
-        rawTx: Buffer.from(tx.getTransaction()).toString("hex"),
-        originalTx: origTx,
-        ...txDetails,
-        ...stakeInfo
+        rawTx,
+        outputs,
+        ...txDetails
       };
     };
   }
 );
+export const transactionsMap = get([ "grpc", "transactions" ]);
+
+export const regularTransactions = createSelector(
+  [ transactionNormalizer, transactionsMap ],
+  (normalizerFn, txsMap) => {
+    return Object.keys(txsMap).filter(hash => !txsMap[hash].isStake)
+      .reduce((normalizedMap, txHash) => {
+        const tx = txsMap[txHash];
+        if (tx.isStake) return null;
+        normalizedMap[txHash] = normalizerFn(tx);
+        return normalizedMap;
+      }, {});
+  }
+);
+
+export const stakeTransactions = createSelector(
+  [ ticketNormalizer, transactionsMap ],
+  (normalizerFn, txsMap) => {
+    return Object.keys(txsMap).filter(hash => txsMap[hash].isStake)
+      .reduce((normalizedMap, txHash) => {
+        const tx = txsMap[txHash];
+        normalizedMap[txHash] = normalizerFn(tx);
+        return normalizedMap;
+      }, {});
+  }
+);
 
 export const noMoreTransactions = get([ "grpc", "noMoreTransactions" ]);
-const transactionsNormalizer = createSelector([ transactionNormalizer ], map);
 export const transactionsFilter = get([ "grpc", "transactionsFilter" ]);
-export const hasUnminedTransactions = compose(l => l && l.length > 0, get([ "grpc", "unminedTransactions" ]));
-export const transactions = createSelector(
-  [ transactionsNormalizer, get([ "grpc", "transactions" ]) ], apply
+
+const transactionsNormalizer = createSelector([ transactionNormalizer ], map);
+const ticketsNormalizer = createSelector([ ticketNormalizer ], map);
+
+export const homeHistoryTickets = createSelector(
+  [ ticketsNormalizer, get([ "grpc", "recentStakeTransactions" ]) ], apply
 );
 
 export const homeHistoryTransactions = createSelector(
@@ -466,63 +477,6 @@ export const ticketDataChart = createSelector(
     locked: (s.series.locked + s.series.immature) / unitDivisor,
     immature: s.series.immature / unitDivisor
   })));
-
-export const viewedDecodedTransaction = createSelector(
-  [ transactions, (state, { match: { params: { txHash } } }) => txHash, decodedTransactions ],
-  (transactions, txHash, decodedTransactions) => decodedTransactions[txHash]
-);
-
-const recentStakeTransactions = createSelector(
-  [ transactionsNormalizer, get([ "grpc", "recentStakeTransactions" ]) ], apply
-);
-
-export const homeHistoryTickets = createSelector(
-  [ recentStakeTransactions, txHashToTicket ],
-  ( recentStakeTransactions, txHashToTicket ) => {
-    return recentStakeTransactions.map( tx => {
-      const ticketDecoded = txHashToTicket[tx.txHash];
-      if (!ticketDecoded) {
-        // ordinarily, this shouldn't happen as we should have all tickets purchases
-        // and spends (votes/revocations) stored in the allTickets/txHashToTicket
-        // selectors. I'm getting some errors here on some wallets while testing
-        // split tickets and non-standard voting layouts, so I'm leaving this and
-        // the filter for the moment.
-        return null;
-      }
-      if (ticketDecoded.ticketPrice) tx.ticketPrice = ticketDecoded.ticketPrice;
-      if (ticketDecoded.status != "voted") {
-        tx.status = ticketDecoded.status;
-      }
-      if (ticketDecoded.enterTimestamp) tx.enterTimestamp = ticketDecoded.enterTimestamp;
-      if (ticketDecoded.leaveTimestamp) tx.leaveTimestamp = ticketDecoded.leaveTimestamp;
-      if (ticketDecoded.ticketReward) tx.ticketReward = ticketDecoded.ticketReward;
-
-      return tx;
-    }).filter(v => !!v);
-  }
-);
-
-export const viewableTransactions = createSelector(
-  [ transactions, homeHistoryTransactions, homeHistoryTickets ],
-  (transactions, homeTransactions, homeHistoryTickets) => [ ...transactions, ...homeTransactions, ...homeHistoryTickets ]
-);
-export const viewedTransaction = createSelector(
-  [ viewableTransactions, (state, { match: { params: { txHash } } }) => txHash, txHashToTicket ],
-  (transactions, txHash, txHashToTicket) => {
-    const ticketDecoded = txHashToTicket[txHash];
-    const tx = find({ txHash }, transactions);
-    if (ticketDecoded) {
-      if (ticketDecoded.ticketPrice) tx.ticketPrice = ticketDecoded.ticketPrice;
-      if (ticketDecoded.status != "voted") {
-        tx.status = ticketDecoded.status;
-      }
-      if (ticketDecoded.enterTimestamp) tx.enterTimestamp = ticketDecoded.enterTimestamp;
-      if (ticketDecoded.leaveTimestamp) tx.leaveTimestamp = ticketDecoded.leaveTimestamp;
-      if (ticketDecoded.ticketReward) tx.ticketReward = ticketDecoded.ticketReward;
-    }
-    return tx;
-  }
-);
 
 const rescanResponse = get([ "control", "rescanResponse" ]);
 export const rescanRequest = get([ "control", "rescanRequest" ]);
@@ -827,8 +781,6 @@ export const mainWindow = () => window;
 
 export const shutdownRequested = get([ "daemon", "shutdownRequested" ]);
 export const daemonStopped = get([ "daemon", "daemonStopped" ]);
-
-export const chainParams = compose(isTestNet => isTestNet ? TestNetParams : MainNetParams, isTestNet);
 
 export const blocksPassedOnTicketInterval = createSelector(
   [ chainParams, currentBlockHeight ],
