@@ -46,12 +46,5 @@ export const getVersionService = getServiceClient(
 );
 export const getVotingService = getServiceClient(services.VotingServiceClient);
 export const getAgendaService = getServiceClient(services.AgendaServiceClient);
-export const getMessageVerificationService = getServiceClient(
-  services.MessageVerificationServiceClient
-);
-export const getDecodeMessageService = getServiceClient(
-  services.DecodeMessageServiceClient
-);
-export const getAccountMixerService = getServiceClient(
-  services.AccountMixerServiceClient
-);
+export const getMessageVerificationService = getServiceClient(services.MessageVerificationServiceClient);
+export const getAccountMixerService = getServiceClient(services.AccountMixerServiceClient);
