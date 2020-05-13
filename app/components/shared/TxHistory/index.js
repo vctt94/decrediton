@@ -48,19 +48,15 @@ const TxHistory = ({
       const txTimestamp = tx.txTimestamp;
       // we define the transaction icon by its rowType, so we pass it as a
       // className props
-      let rowType = tx.status || tx.txType || tx.txDirection;
+      let rowType = tx.status || tx.txType;
       rowType = rowType.toLowerCase();
+      // If it is a regular tx we use its direction to show a proper icon.
+      if(rowType === txTypes.REGULAR) rowType = tx.txDirection;
       const Component = TxRowByType[rowType];
       if (Component === StakeTxRow && isRegular) return;
       if (Component === RegularTxRow && isStake) return;
 
-      const txOutputAddresses =
-        tx.originalTx &&
-        tx.originalTx.outputs &&
-        tx.originalTx.outputs
-          .filter((o) => !o.isChange)
-          .map((o) => o.address)
-          .join(" ");
+      const txOutputAddresses = tx.outputs && tx.outputs.filter(o => !o.isChange).map(o => o.address).join(" ");
       return (
         <Component
           key={tx.txHash}
@@ -72,11 +68,8 @@ const TxHistory = ({
             txTs: txTimestamp && tsDate(txTimestamp),
             overview,
             pending: tx.isPending,
-            onClick: () => history.push(`/transactions/history/${tx.txHash}`),
-            timeMessage: (txTimestamp) =>
-              intl.formatMessage(timeMessageDefine.dayMonthHourDisplay, {
-                value: txTimestamp
-              })
+            onClick: () => history.push(`/transaction/history/${tx.txHash}`),
+            timeMessage: (txTimestamp) => intl.formatMessage(timeMessageDefine.dayMonthHourDisplay, { value: txTimestamp })
           }}
         />
       );

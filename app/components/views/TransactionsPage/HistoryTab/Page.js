@@ -97,25 +97,12 @@ const Page = ({
     loadMore={onLoadMoreTransactions}
     initialLoad={loadMoreThreshold > 90}
     useWindow={false}
-    threshold={loadMoreThreshold}>
-    <Subtitle
-      title={<T id="history.subtitle" m="Transaction History" />}
-      className={"is-row"}
-      children={subtitleMenu({
-        sortTypes,
-        txTypes,
-        selectedSortOrderKey,
-        selectedTxTypeKey,
-        searchText,
-        intl,
-        onChangeSelectedType,
-        onChangeSortType,
-        onChangeSearchText,
-        onChangeSliderValue,
-        currencyDisplay,
-        transactionsFilter,
-        unitDivisor
-      })}
+    threshold={loadMoreThreshold}
+  >
+    <Subtitle title={<T id="history.subtitle" m="Transaction History"/>} className={"is-row"}
+      children={subtitleMenu({ sortTypes, txTypes, selectedSortOrderKey, selectedTxTypeKey,
+        searchText, intl, onChangeSelectedType, onChangeSortType, onChangeSearchText, onChangeSliderValue,
+        currencyDisplay, transactionsFilter, unitDivisor })}
     />
     <div className="history-page-content-wrapper">
       {transactions.length > 0 ? (
