@@ -1092,10 +1092,7 @@ export const currentStakePoolConfigError = get([
   "stakepool",
   "currentStakePoolConfigError"
 ]);
-export const currentStakePoolConfigSuccessMessage = get([
-  "stakepool",
-  "currentStakePoolConfigSuccessMessage"
-]);
+
 export const purchaseTicketsError = get(["control", "purchaseTicketsError"]);
 export const purchaseTicketsSuccess = get([
   "control",
@@ -1196,12 +1193,16 @@ const importScriptRequestAttempt = get([
   "importScriptRequestAttempt"
 ]);
 
+// LEGACY selectors.
+// Keep them while we still support old version of vsps.
 export const isSavingStakePoolConfig = bool(currentStakePoolConfigRequest);
 export const isAddingCustomStakePool = bool(
   get(["stakePool", "addCustomStakePoolAttempt"])
 );
 export const isPurchasingTickets = bool(purchaseTicketsRequestAttempt);
 export const isImportingScript = bool(importScriptRequestAttempt);
+
+// end of LEGACY selectors
 
 export const newUnminedMessage = get(["notifications", "newUnminedMessage"]);
 
