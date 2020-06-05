@@ -6,7 +6,7 @@ import {
   ImportScriptIconButton
 } from "buttons";
 import { FormattedMessage as T, injectIntl, defineMessages } from "react-intl";
-import { TextInput, StakePoolSelect } from "inputs";
+import { TextInput, LEGACY_StakePoolSelect } from "inputs";
 import { Documentation } from "shared";
 import "style/Layout.less";
 import "style/StakePool.less";
@@ -49,7 +49,7 @@ const StakePoolsAddForm = ({
             <T id="stakepool.label" m="VSP" />:
           </div>
           <div className="stakepool-field-value">
-            <StakePoolSelect
+            <LEGACY_StakePoolSelect
               creatable
               options={unconfiguredStakePools}
               value={selectedUnconfigured}
