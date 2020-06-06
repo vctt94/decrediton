@@ -7,26 +7,34 @@ import { ShowWarning, Subtitle } from "shared";
 import "style/PurchaseTickets.less";
 import { InfoDocModalButton } from "buttons";
 import UnsignedTickets from "../UnsignedTickets";
+import styles from "../PurchaseTab.module.css";
 
-const getTitleIcon = () => (
-  <InfoDocModalButton
-    document="PurchaseTicketsInfo"
-    modalClassName="info-modal-fields"
-    className="info-title-icon"
-    draggable
-  />
+const getTitleIcon = ({ toggleIsLegacy }) => (
+  <>
+    <div className={styles.legacyIcon} onClick={() => toggleIsLegacy(false)}>
+      change to current
+    </div>
+    <InfoDocModalButton
+      document="PurchaseTicketsInfo"
+      modalClassName="info-modal-fields"
+      className="info-title-icon"
+      draggable
+    />
+  </>
 );
+
 const Tickets = ({
   spvMode,
   blocksNumberToNextTicket,
   sidebarOnBottom,
   isWatchingOnly,
+  toggleIsLegacy,
   ...props
 }) => (
   <div className="purchase-ticket-area">
     <Subtitle
       title={<T id="purchase.subtitle" m="Purchase Tickets" />}
-      children={getTitleIcon()}
+      children={getTitleIcon({ toggleIsLegacy })}
       className="is-row"
     />
     <StakeInfo {...{ sidebarOnBottom }} />
