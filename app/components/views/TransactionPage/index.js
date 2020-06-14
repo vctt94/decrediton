@@ -10,6 +10,7 @@ import { StandalonePage } from "layout";
 import * as ta from "actions/TransactionActions";
 import * as ca from "actions/ClientActions";
 import * as sel from "selectors";
+import { TRANSACTION_DIR_RECEIVED } from "constants";
 
 function Transaction() {
   const { txHash } = useParams();
@@ -38,9 +39,22 @@ function Transaction() {
       load: async () => {
         if (!viewedDecodedTx) {
           const decodedTx = decodeRawTransactions(viewedTransaction.rawTx);
+          const { txDirection } = viewedTransaction;
           let decodedTxWithInputs = decodedTx;
+          // if it is a regular transaction and transaction is not received,
+          // we need to get the input amount from older txs. If it is not
+          // a wallet input getAmountFromTxInputs will throw an error, which
+          // we ignore.
           if (!viewedTransaction.isStake) {
-            decodedTxWithInputs = await getAmountFromTxInputs(decodedTx);
+            try {
+              decodedTxWithInputs = await getAmountFromTxInputs(decodedTx);
+            } catch (error) {
+              // if item does not exists it probably is a wallet non input
+              // so the amount was not founded. We can ignore it.
+              if (!error.toString().includes("item does not exist")) {
+                throw error;
+              }
+            }
           }
           setViewedDecodedTx(decodedTxWithInputs);
           return send({ type: "RESOLVE" });
