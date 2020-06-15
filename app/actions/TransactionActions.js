@@ -719,24 +719,24 @@ export const getTxFromInputs = (unsignedTx) => (dispatch, getState) =>
       const txs = unsignedTx.inputs.reduce(async (txs, inp) => {
         const { prevTxId } = inp;
         if (txsMap[prevTxId]) return;
-  
+
         txsMap[prevTxId] = true;
         const oldTx = await wallet.getTransaction(walletService, prevTxId);
         if (!oldTx) {
           return reject(new Error(`Transaction ${prevTxId} not found`));
         }
-  
+
         const rawTxBuffer = Buffer.from(hexToBytes(oldTx.rawTx));
         const decodedOldTx = wallet.decodeRawTransaction(
           rawTxBuffer,
           chainParams
         );
-  
+
         txs.push(decodedOldTx);
-  
+
         return txs;
       }, []);
-  
+
       resolve(txs);
     } catch (e) {
       reject(e);

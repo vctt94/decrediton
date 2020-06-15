@@ -10,7 +10,6 @@ import { StandalonePage } from "layout";
 import * as ta from "actions/TransactionActions";
 import * as ca from "actions/ClientActions";
 import * as sel from "selectors";
-import { TRANSACTION_DIR_RECEIVED } from "constants";
 
 function Transaction() {
   const { txHash } = useParams();
@@ -39,7 +38,6 @@ function Transaction() {
       load: async () => {
         if (!viewedDecodedTx) {
           const decodedTx = decodeRawTransactions(viewedTransaction.rawTx);
-          const { txDirection } = viewedTransaction;
           let decodedTxWithInputs = decodedTx;
           // if it is a regular transaction and transaction is not received,
           // we need to get the input amount from older txs. If it is not
