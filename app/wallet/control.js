@@ -207,7 +207,10 @@ export const constructSendAllTransaction = (
     );
   });
 
-export const getCoinjoinOutputspByAcct = (walletService) => new Promise((ok, fail) => {
-  const request = new api.GetCoinjoinOutputspByAcctRequest();
-  walletService.getCoinjoinOutputspByAcct(request, (err, res) => err ? fail(err) : ok({ ...res }));
-});
+export const getCoinjoinOutputspByAcct = (walletService) =>
+  new Promise((ok, fail) => {
+    const request = new api.GetCoinjoinOutputspByAcctRequest();
+    walletService.getCoinjoinOutputspByAcct(request, (err, res) =>
+      err ? fail(err) : ok({ ...res })
+    );
+  });
