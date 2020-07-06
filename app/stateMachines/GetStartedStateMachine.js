@@ -28,7 +28,7 @@ export const getStartedMachine = Machine({
         SHOW_RELEASE_NOTES: "releaseNotes",
         SHOW_CREATE_WALLET: "creatingWallet",
         SET_MIXED_ACCOUNT: {
-          target: "settingMixedAccount"
+          target: "settingMixedAccount",
           cond: (context, e) => !!context.isPrivacy
         }
       },
