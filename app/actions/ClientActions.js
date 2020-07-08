@@ -710,3 +710,6 @@ export const abandonTransactionAttempt = (txid) => (dispatch, getState) => {
     })
     .catch((error) => dispatch({ error, type: ABANDONTRANSACTION_FAILED }));
 };
+
+export const goToHomePage = () => (dispatch) =>
+  dispatch(pushHistory("/home"));
