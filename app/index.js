@@ -72,6 +72,7 @@ const initialState = {
   },
   vsp: {
     availableVSPs: null,
+    availableVSPsError: null,
     ticketAutoBuyerRunning: null
   },
   daemon: {
