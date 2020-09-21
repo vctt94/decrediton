@@ -1541,6 +1541,9 @@ export const dexURL = createSelector(
   (isTestNet) => isTestNet ? DCRDEX_API_URL_TESTNET : ""
 );
 
+// TODO enable by config settings
+export const getDEXEnabled = createSelector([], () => true);
+
 export const politeiaEnabled = compose(
   (l) => l.indexOf(EXTERNALREQUEST_POLITEIA) > -1,
   allowedExternalRequests

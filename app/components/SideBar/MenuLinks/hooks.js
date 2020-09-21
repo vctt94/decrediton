@@ -6,6 +6,7 @@ import theme from "theme";
 import * as sel from "selectors";
 import { linkList, TREZOR_KEY, LN_KEY } from "./Links";
 import { MENU_LINKS_PER_ROW } from "constants/Decrediton";
+// import { trezorLink, lnLink, dexLink } from "./Links";
 
 export function useMenuLinks() {
   const location = useSelector(sel.location);
@@ -14,6 +15,7 @@ export function useMenuLinks() {
   const uiAnimations = useSelector(sel.uiAnimations);
   const isTrezor = useSelector(sel.isTrezor);
   const lnEnabled = useSelector(sel.lnEnabled);
+  const dexEnabled = useSelector(sel.getDEXEnabled);
 
   const newActiveVoteProposalsCount = useSelector(
     sel.newActiveVoteProposalsCount

@@ -4,15 +4,16 @@ import * as sel from "selectors";
 
 const { DCRDEX_URL_HOST } = dex;
 
-export const GET_DEX_USER_SUCCESS = "GET_DEX_USER_SUCCESS";
-export const getUser = () => (dispatch, getState) => {
+export const getUser = () => (dispatch, getState) => new Promise((resolve, reject) => {
   const treasuryAddress = sel.chainParams(getState()).TreasuryAddress;
   const dURL = sel.dexURL(getState());
   dex.getUser(dURL)
-    .then(user => {
-      console.log(user)
-    });
-};
+    .then(response => {
+      const { data } = response;
+      resolve(data);
+    })
+    .catch(err => reject(err));
+});
 
 const updateWalletRoute = 'update_wallet';
 const notificationRoute = 'notify';

@@ -83,6 +83,7 @@ const Wallet = ({ setInterval }) => {
           <Route path="/trezor" component={TrezorPage} />
           <Route path="/ln" component={LNPage} />
           <Route path="/listUtxo" component={ListUtxo} />
+          <Route path="/dex" component={DEXPage} />
         </MainSwitch>
         <Route
           path="/transaction/history/:txHash"
