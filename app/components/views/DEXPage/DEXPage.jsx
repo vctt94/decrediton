@@ -2,7 +2,7 @@
 import { TabbedPage, TabbedPageTab as Tab, TitleHeader } from "layout";
 import { FormattedMessage as T } from "react-intl";
 import { Switch, Redirect } from "react-router-dom";
-import DEXConfigPage from "./DEXConfigPage";
+import DEXConfig from "./DEXConfig/DEXConfig";
 import { useDEXPage } from "./hooks";
 import { useMountEffect } from "hooks";
 import { useState } from "react";
@@ -79,7 +79,7 @@ const DEXPage = () => {
   // check if we have any configured exchanges, otherwise we need to configure
   // them.
   if (Object.keys(user.exchanges).length === 0) {
-    return <DEXConfigPage {...{ user }} />
+    return <DEXConfig {...{ user }} />
   }
   console.log(user)
   return <HomeTab />;

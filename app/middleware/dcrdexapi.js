@@ -4,12 +4,24 @@ import axios from "axios";
 export const DCRDEX_API_URL_TESTNET = "http://localhost:5758/api";
 export const DCRDEX_URL_HOST = "127.0.0.1:5758"
 
+function POST(dexURL, request) {
+  // return ensureCSRF(piURL).then((resp) => {
+  const cfg = {
+    headers: { "content-type": "application/json" }
+  };
+  return axios.post(dexURL, JSON.stringify(request), cfg);
+  // });
+}
 
 const GET = (path) => {
   return axios.get(path);
 };
 
 export const getUser = (daURL) => GET(`${daURL}/user`);
+
+export const register = (daURL, request) => POST(`${daURL}/register`, request);
+
+export const getFee = (daURL, request) => POST(`${daURL}/getfee`, request);
 
 // MessageSocket is a WebSocket manager that uses the Decred DEX Mesage format
 // for communications.

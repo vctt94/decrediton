@@ -1,17 +1,45 @@
 
 import * as dex from "middleware/dcrdexapi";
+import fs from "fs";
 import * as sel from "selectors";
 
 const { DCRDEX_URL_HOST } = dex;
 
 export const getUser = () => (dispatch, getState) => new Promise((resolve, reject) => {
-  const treasuryAddress = sel.chainParams(getState()).TreasuryAddress;
   const dURL = sel.dexURL(getState());
   dex.getUser(dURL)
     .then(response => {
       const { data } = response;
       resolve(data);
     })
+    .catch(err => reject(err));
+});
+
+export const register = () => (dispatch, getState) => new Promise((resolve, reject) => {
+  const dURL = sel.dexURL(getState());
+  const request = {
+    // addr: 
+    // Addr    string           `json:"url"`
+    // AppPass encode.PassBytes `json:"appPass"`
+    // Fee     uint64           `json:"fee"`
+    // Cert    string           `json:"cert"`
+  }
+  dex.register(dURL, request)
+    .then(response => {
+      console.log(response)
+    })
+    .catch(err => reject(err));
+});
+
+export const getFee = () => (dispatch, getState) => new Promise((resolve, reject) => {
+  const dURL = sel.dexURL(getState());
+  dex.getFee(dURL, {
+    // addr: addr,
+    // cert: cert
+    addr: "dex-test.ssgen.io:7232",
+    cert: fs.readFileSync("/home/vctt/.dexc/dex-test.ssgen.io.cert").toString()
+  })
+    .then(response => resolve(response.data))
     .catch(err => reject(err));
 });
 
