@@ -14,33 +14,30 @@ const messages = defineMessages({
     defaultMessage: "Confirm Private Passphrase"
   }
 });
+const passPhraseLabel = <T
+  id="createWallet.passhraseInput.label"
+  m="Private passphrase"
+  />;
+
+const passPhraseVerificationLabel = <T
+    id="createWallet.passphraseInput.verifyLabel"
+    m="Repeat Private Passphrase"
+  />;
+const blankPassPhraseError = <T
+    id="createWallet.passphraseInput.errors.noPassPhrase"
+    m="*Please enter your private passphrase"
+  />;
+const passPhraseVerificationError = <T
+    id="createWallet.passphraseInput.errors.noMatch"
+    m="*Passphrases do not match"
+  />;
 
 const PassPhraseInputs = ({
-  passPhraseLabel = (
-    <T id="createWallet.passhraseInput.label" m="Private passphrase" />
-  ),
-  passPhraseVerificationLabel = (
-    <T
-      id="createWallet.passphraseInput.verifyLabel"
-      m="Repeat Private Passphrase"
-    />
-  ),
-  blankPassPhraseError = (
-    <T
-      id="createWallet.passphraseInput.errors.noPassPhrase"
-      m="*Please enter your private passphrase"
-    />
-  ),
-  passPhraseVerificationError = (
-    <T
-      id="createWallet.passphraseInput.errors.noMatch"
-      m="*Passphrases do not match"
-    />
-  ),
-  passPhrase,
-  passPhraseVerification,
-  setPassPhrase,
-  setPassPhraseVerification,
+  newPassphrase,
+  passphraseConfirm,
+  setNewpassphrase,
+  setPassphrase,
+  setPassphraseConfirm,
   intl,
   onKeyDown,
   hasFailedAttempt,
@@ -62,10 +59,10 @@ const PassPhraseInputs = ({
           required
           className={styles.inputPrivatePassword}
           placeholder={intl.formatMessage(messages.passphrasePlaceholder)}
-          value={passPhrase}
+          value={newPassphrase}
           onKeyDown={onKeyDown}
-          onChange={(e) => setPassPhrase(e.target.value)}
-          showErrors={hasFailedAttempt}
+          onChange={(e) => setNewpassphrase(e.target.value)}
+          showErrors={newPassphrase !== null && !isValid}
           requiredMessage={blankPassPhraseError}
         />
       </form>
@@ -81,10 +78,10 @@ const PassPhraseInputs = ({
           invalid={!isValid}
           invalidMessage={passPhraseVerificationError}
           placeholder={intl.formatMessage(messages.verifyPassphrasePlaceholder)}
-          value={passPhraseVerification}
+          value={passphraseConfirm}
           onKeyDown={onKeyDown}
-          onChange={(e) => setPassPhraseVerification(e.target.value)}
-          showErrors={true}
+          onChange={(e) => setPassphraseConfirm(e.target.value)}
+          showErrors={passphraseConfirm !== null && !isValid}
         />
       </form>
     </div>

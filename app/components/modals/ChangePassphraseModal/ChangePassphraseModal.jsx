@@ -8,20 +8,20 @@ const ChangePassphraseModal = ({ onCancelModal, onSubmit, ...props }) => {
   const [isValid, setIsValid] = useState(false);
   const [error, setIsError] = useState("");
 
-  const resetState = useCallback(() => {
+  const resetState = () => {
     setNewPassphrase(null);
     setConfirmPrivPass(null);
-  }, []);
+  }
 
-  const onCancelModalCallback = useCallback(() => {
+  const onCancelModalCallback = () => {
     resetState();
     onCancelModal && onCancelModal();
-  }, [resetState, onCancelModal]);
+  }
 
-  const onSubmitCallback = useCallback((passPhrase) => {
+  const onSubmitCallback = (passPhrase) => {
     onSubmit(passPhrase, { newPassphrase, priv: true });
     resetState();
-  }, [newPassphrase, onSubmit, resetState]);
+  }
 
   useEffect(() => {
     setIsValid(!!newPassphrase &&

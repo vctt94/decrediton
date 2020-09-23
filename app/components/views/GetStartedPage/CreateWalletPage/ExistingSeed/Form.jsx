@@ -9,7 +9,7 @@ import {
   CreateWalletMsg
 } from "../../messages";
 import { WORDS, HEX } from "constants";
-import { Tooltip, CreatePassPhrase } from "shared";
+import { Tooltip, CreatePassphrase } from "shared";
 import { classNames } from "pi-ui";
 import styles from "../CreateWallet.module.css";
 

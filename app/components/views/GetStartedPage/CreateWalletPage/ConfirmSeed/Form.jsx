@@ -11,7 +11,7 @@ import {
   GoBackMsg,
   CreateNewWalletTitle
 } from "../../messages";
-import { Tooltip, CreatePassPhrase } from "shared";
+import { Tooltip, CreatePassphrase } from "shared";
 import { classNames } from "pi-ui";
 import styles from "../CreateWallet.module.css";
 
@@ -80,7 +80,7 @@ export const ConfirmSeedForm = ({
         })}
       </div>
     </div>
-    <CreatePassPhrase onChange={setPassPhrase} onSubmit={onCreateWallet} />
+    <CreatePassphrase onChange={setPassPhrase} onSubmit={onCreateWallet} />
     <div className={styles.createWalletButtonContainer}>
       <KeyBlueButton
         className={styles.walletKeyBlueButton}

@@ -1,94 +1,51 @@
-import PassPhraseInputs from "./PassPhraseInputs";
+import PassphraseInputs from "./PassPhraseInputs";
+import { useState, useEffect } from "react";
 
-@autobind
-class CreatePassPhrase extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      passPhrase: "",
-      passPhraseVerification: "",
-      isShowingPassphraseInformation: false,
-      hasFailedAttempt: false
-    };
-  }
+// CreatePassphrase is a component used for creating new passphrases
+const CreatePassphrase = ({ onSubmit, onChange, props }) => {
+  const [passphrase, setPassphrase] = useState(null);
+  const [newPassphrase, setNewpassphrase] = useState(null);
+  const [passphraseConfirm, setPassphraseConfirm] = useState(null);
+  const [isValid, setIsValid] = useState(false);
 
-  render() {
-    const {
-      setPassPhrase,
-      setPassPhraseVerification,
-      onKeyDown,
-      showPassphraseInformation,
-      hidePassphraseInformation
-    } = this;
-    const {
-      passPhrase,
-      passPhraseVerification,
-      isShowingPassphraseInformation,
-      hasFailedAttempt
-    } = this.state;
-    const isValid = this.isValid();
-    return (
-      <PassPhraseInputs
-        {...{
-          ...this.props,
-          hasFailedAttempt,
-          passPhrase,
-          passPhraseVerification,
-          isValid,
-          setPassPhrase,
-          setPassPhraseVerification,
-          onKeyDown,
-          showPassphraseInformation,
-          hidePassphraseInformation,
-          isShowingPassphraseInformation
-        }}
-      />
-    );
-  }
-  showPassphraseInformation() {
-    this.setState({ isShowingPassphraseInformation: true });
-  }
-  hidePassphraseInformation() {
-    this.setState({ isShowingPassphraseInformation: false });
-  }
+  useEffect(() => {
+    setIsValid(!!newPassphrase &&
+      newPassphrase === passphraseConfirm);
+  }, [newPassphrase, passphraseConfirm]);
 
-  isValid() {
-    return (
-      !!this.state.passPhrase &&
-      this.state.passPhrase === this.state.passPhraseVerification
-    );
-  }
+  // if on change is passed, we change its value if isValid is true.
+  useEffect(() => {
+    isValid && onChange(newPassphrase);
+  }, [isValid]);
 
-  setPassPhrase(passPhrase) {
-    this.setState({ hasFailedAttempt: true });
-    this.setState({ passPhrase }, this.onChange);
-  }
-
-  setPassPhraseVerification(passPhraseVerification) {
-    this.setState({ passPhraseVerification }, this.onChange);
-  }
-
-  onKeyDown(e) {
+  const onKeyDown = (e) => {
+    // Enter key
     if (e.keyCode == 13) {
-      // Enter key
       e.preventDefault();
-      if (this.props.onSubmit) {
-        this.props.onSubmit();
-      }
+      onSubmit();
     }
   }
 
-  onChange() {
-    if (this.isValid()) {
-      this.props.onChange(this.state.passPhrase);
-    } else {
-      this.props.onChange("");
-    }
-  }
+  return (
+    <PassphraseInputs
+      {...{
+        ...props,
+        passphrase,
+        newPassphrase,
+        setNewpassphrase,
+        passphraseConfirm,
+        isValid,
+        setPassphrase,
+        setPassphraseConfirm,
+        onKeyDown
+      }}
+    />
+  );
 }
 
-CreatePassPhrase.propTypes = {
-  onChange: PropTypes.func.isRequired
+CreatePassphrase.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired
 };
 
-export default CreatePassPhrase;
+export default CreatePassphrase;
