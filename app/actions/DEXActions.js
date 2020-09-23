@@ -31,14 +31,9 @@ export const register = () => (dispatch, getState) => new Promise((resolve, reje
     .catch(err => reject(err));
 });
 
-export const getFee = () => (dispatch, getState) => new Promise((resolve, reject) => {
+export const getFee = (addr, cert) => (dispatch, getState) => new Promise((resolve, reject) => {
   const dURL = sel.dexURL(getState());
-  dex.getFee(dURL, {
-    // addr: addr,
-    // cert: cert
-    addr: "dex-test.ssgen.io:7232",
-    cert: fs.readFileSync("/home/vctt/.dexc/dex-test.ssgen.io.cert").toString()
-  })
+  dex.getFee(dURL, { addr, cert })
     .then(response => resolve(response.data))
     .catch(err => reject(err));
 });
