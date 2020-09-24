@@ -9,7 +9,12 @@ const cert = fs.readFileSync("/home/vctt/.dexc/dex-test.ssgen.io.cert").toString
 const DEXConfig = ({ user, }) => {
   const { onGetFee } = useDEXPage();
   const [formErrors, setFormErrors] = useState({});
-  const [configStep, setConfigStep] = useState(0);
+  const [configStep, setConfigStep] = useState(null);
+  // TODO create steps (state machine?)
+  if (!user.authed) {
+    setConfigStep(0)
+  }
+  // if ()
 
   onGetFee(addr, cert).then(r => console.log(r)).catch(err => console.log(err));
 
