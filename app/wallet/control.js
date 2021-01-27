@@ -482,3 +482,17 @@ export const lockWallet = (walletService) =>
       resolve(true);
     });
   });
+
+export const setAccountPassphrase = (walletService, accountNumber, accountPassphrase, newAcctPassphrase, walletPassphrase) =>
+new Promise((ok, fail) => {
+  const request = new api.SetAccountPassphraseRequest();
+  request.setAccountNumber(accountNumber);
+  request.setNewAccountPassphrase(new Uint8Array(Buffer.from(newAcctPassphrase)));
+  if (accountPassphrase) {
+    request.setAccountPassphrase(new Uint8Array(Buffer.from(accountPassphrase)));
+  }
+  if (walletPassphrase) {
+    request.setWalletPassphrase(new Uint8Array(Buffer.from(walletPassphrase)));
+  }
+  walletService.setAccountPassphrase(request, (err, res) => err ? fail(err) : ok({ ...res }));
+});
