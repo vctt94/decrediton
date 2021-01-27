@@ -676,6 +676,12 @@
 .mixerSettingsTitle {
   font-size: 20px;
 }
+
+.setPassAcctModalDescription {
+  font-size: 9pt;
+  color: var(--title-text-and-button-background);
+}
+
 @media screen and (max-width: 1179px) {
   .confirmSendFromUnmixed {
     margin-left: 150px;

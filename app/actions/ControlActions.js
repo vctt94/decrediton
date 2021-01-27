@@ -906,3 +906,29 @@ export const getPeerInfo = () => (dispatch, getState) => {
     })
     .catch((error) => dispatch({ type: GETPEERINFO_FAILED, error }));
 };
+
+export const SETACCOUNTPASSPHRASE_ATTEMPT = "SETACCOUNTPASSPHRASE_ATTEMPT";
+export const SETACCOUNTPASSPHRASE_FAILED = "SETACCOUNTPASSPHRASE_FAILED";
+export const SETACCOUNTPASSPHRASE_SUCCESS = "SETACCOUNTPASSPHRASE_SUCCESS";
+
+export const setAccountPassphrase = (accountNumber, accountPassphrase, newAcctPassphrase, walletPassphrase) => (
+  dispatch,
+  getState
+) => {
+  dispatch({ type: SETACCOUNTPASSPHRASE_ATTEMPT });
+  return wallet
+    .setAccountPassphrase(sel.walletService(getState()), accountNumber, accountPassphrase, newAcctPassphrase, walletPassphrase)
+    .then(() => {
+      const oldAccounts = sel.balances(getState());
+      const accounts = oldAccounts.map((acct) => {
+        if (acct.accountNumber !== accountNumber) {
+          return acct;
+        }
+        acct.encrypted = true;
+        return acct;
+      });
+
+      return dispatch({ type: SETACCOUNTPASSPHRASE_SUCCESS, accounts });
+    })
+    .catch((error) => dispatch({ error, type: SETACCOUNTPASSPHRASE_FAILED }));
+};

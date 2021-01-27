@@ -41,7 +41,8 @@ import {
   ConfirmModal,
   DocumentationInfoModal,
   AboutModal,
-  CantCloseModals
+  CantCloseModals,
+  ChangeAccountPassphrase
 } from "modals";
 
 // mbb = ModalButtonBuilder (func to build a functional ModalButton component
@@ -96,6 +97,11 @@ export const ChangePassphraseButton = mbb(
   "change-password-default-icon",
   ChangePassphraseModal
 );
+export const ChangeAccountPassphraseButton = mbb(
+  "change-account-passphrase",
+  ChangeAccountPassphrase
+);
+
 export const InvisiblePassphraseModalButton = mbb(
   null,
   PassphraseModal,

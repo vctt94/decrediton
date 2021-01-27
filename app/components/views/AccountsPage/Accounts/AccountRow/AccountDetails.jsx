@@ -4,6 +4,7 @@ import { SlateGrayButton } from "buttons";
 import style from "../Accounts.module.css";
 import { classNames } from "pi-ui";
 import { IMPORTED_ACCOUNT, DEFAULT_ACCOUNT } from "constants";
+import { ChangeAccountPassphraseButton } from "buttons";
 
 function isHidable(account) {
   return (
@@ -28,7 +29,9 @@ const AccountsList = ({
   showAccount,
   showPubKey,
   onTogglePubkey,
-  accountExtendedKey
+  accountExtendedKey,
+  onSetAccountPassphrase,
+  changeAccount
 }) => (
     <div key={"details" + account.accountNumber}>
       <div className={style.detailsBottomColumns}>
@@ -111,6 +114,20 @@ const AccountsList = ({
           </div>
         )}
         <div className={classNames(style.actionsButtons, style.isRow)}>
+          { account.accountNumber === changeAccount &&
+            <Tooltip text={<T id="accounts.setaccountpass" m="Set Account Passphrase" />}>
+              <ChangeAccountPassphraseButton {...{ account }}
+                className={style.renameButton}
+                onSubmit={(passphrase, args) => onSetAccountPassphrase(passphrase, args)}
+                modalTitle={
+                  <T
+                    id="account.setAcctPass"
+                    m="Set your account passphrase"
+                  />
+                }
+              />
+            </Tooltip>
+          }
           {account.accountName !== IMPORTED_ACCOUNT && (
             <Tooltip text={<T id="accounts.rename.tip" m="Rename Account" />}>
               <div
