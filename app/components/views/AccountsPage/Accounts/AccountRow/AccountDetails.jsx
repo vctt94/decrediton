@@ -115,7 +115,7 @@ const AccountsDetails = ({
         </div>
       )}
       <div className={classNames(style.actionsButtons, style.isRow)}>
-        { account.accountNumber === changeAccount &&
+        { account.accountName !== IMPORTED_ACCOUNT &&
           <Tooltip text={<T id="accounts.setaccountpass" m="Set Account Passphrase" />}>
             <ChangeAccountPassphraseButton {...{ account }}
               className={style.renameButton}
