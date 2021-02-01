@@ -220,23 +220,32 @@ export const SIGNTX_ATTEMPT = "SIGNTX_ATTEMPT";
 export const SIGNTX_FAILED = "SIGNTX_FAILED";
 export const SIGNTX_SUCCESS = "SIGNTX_SUCCESS";
 
-export const signTransactionAttempt = (passphrase, rawTx) => (
+export const signTransactionAttempt = (passphrase, rawTx, acct) => async (
   dispatch,
   getState
 ) => {
   dispatch({ type: SIGNTX_ATTEMPT });
-  return wallet
-    .signTransaction(sel.walletService(getState()), passphrase, rawTx)
-    .then((signTransactionResponse) => {
-      dispatch({
-        signTransactionResponse: signTransactionResponse,
-        type: SIGNTX_SUCCESS
-      });
-      dispatch(
-        publishTransactionAttempt(signTransactionResponse.getTransaction())
-      );
-    })
-    .catch((error) => dispatch({ error, type: SIGNTX_FAILED }));
+  try {
+    const acctNumber = acct.encrypted ? acct.value : null;
+    const error = await dispatch(unlockWalletOrAcct(passphrase, acctNumber));
+    if (error) {
+      return dispatch({ error, type: SIGNTX_FAILED });
+    }
+    const signTransactionResponse = await wallet.signTransaction(
+      sel.walletService(getState()),
+      rawTx
+    );
+    dispatch({
+      signTransactionResponse: signTransactionResponse,
+      type: SIGNTX_SUCCESS
+    });
+    dispatch(
+      publishTransactionAttempt(signTransactionResponse.getTransaction())
+    );
+    await dispatch(lockWalletOrAcct(acctNumber));
+  } catch(error) {
+    dispatch({ error, type: SIGNTX_FAILED });
+  }
 };
 
 export const PUBLISHTX_ATTEMPT = "PUBLISHTX_ATTEMPT";
@@ -954,10 +963,11 @@ export const unlockWalletOrAcct = (passphrase, acctNumber) => async (dispatch, g
   dispatch({ type: UNLOCKACCTORWALLET_ATTEMPT });
   try {
     const accounts = sel.balances(getState());
-    if (!acctNumber) {
+    // accNumber can be 0
+    if (!acctNumber && acctNumber !== 0) {
       await wallet.unlockWallet(sel.walletService(getState()), passphrase);
       dispatch({ type: UNLOCKACCTORWALLET_SUCCESS });
-      return;
+      return null;
     }
   
     const account = accounts.find(acct => acct.accountNumber === acctNumber );
@@ -969,8 +979,10 @@ export const unlockWalletOrAcct = (passphrase, acctNumber) => async (dispatch, g
     }
     await wallet.unlockAccount(sel.walletService(getState()), passphrase, acctNumber);
     dispatch({ type: UNLOCKACCTORWALLET_SUCCESS });
+    return null;
   } catch (error) {
     dispatch({ type: UNLOCKACCTORWALLET_FAILED, error });
+    return error;
   }
 }
 

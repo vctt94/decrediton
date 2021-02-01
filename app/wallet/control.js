@@ -98,10 +98,9 @@ export const changePassphrase = (walletService, oldPass, newPass, priv) =>
     );
   });
 
-export const signTransaction = (walletService, passphrase, rawTx) =>
+export const signTransaction = (walletService, rawTx) =>
   new Promise((ok, fail) => {
     const request = new api.SignTransactionRequest();
-    request.setPassphrase(new Uint8Array(Buffer.from(passphrase)));
     request.setSerializedTransaction(new Uint8Array(Buffer.from(rawTx)));
     walletService.signTransaction(request, (err, res) =>
       err ? fail(err) : ok(res)
@@ -489,7 +488,7 @@ export const unlockAccount = (walletService, passphrase, acctNumber) => new Prom
   unlockReq.setPassphrase(new Uint8Array(Buffer.from(passphrase)));
   unlockReq.setAccountNumber(acctNumber);
   // Unlock wallet so we can call the request.
-  walletService.unlockAccount(unlockReq, (error) => {
+  walletService.unlockAccount(unlockReq, (error, resp) => {
     if (error) {
       reject(error);
     }

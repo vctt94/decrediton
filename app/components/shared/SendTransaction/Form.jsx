@@ -26,7 +26,8 @@ const Form = ({
   styles,
   hideDetails,
   sendButtonLabel,
-  getRunningIndicator
+  getRunningIndicator,
+  account
 }) => (
   <>
     <div className={classNames(styles.sendArea, styles.isRow)}>
