@@ -943,3 +943,61 @@ export const setAccountPassphrase = (accountNumber, accountPassphrase, newAcctPa
     })
     .catch((error) => dispatch({ error, type: SETACCOUNTPASSPHRASE_FAILED }));
 };
+
+export const UNLOCKACCTORWALLET_ATTEMPT = "UNLOCKACCTORWALLET_ATTEMPT";
+export const UNLOCKACCTORWALLET_FAILED = "UNLOCKACCTORWALLET_FAILED";
+export const UNLOCKACCTORWALLET_SUCCESS = "UNLOCKACCTORWALLET_SUCCESS";
+
+// unlockWalletOrAcct unlocks the wallet if no account number informed and an
+// account otherwise. 
+export const unlockWalletOrAcct = (passphrase, acctNumber) => async (dispatch, getState) => {
+  dispatch({ type: UNLOCKACCTORWALLET_ATTEMPT });
+  try {
+    const accounts = sel.balances(getState());
+    if (!acctNumber) {
+      await wallet.unlockWallet(sel.walletService(getState()), passphrase);
+      dispatch({ type: UNLOCKACCTORWALLET_SUCCESS });
+      return;
+    }
+  
+    const account = accounts.find(acct => acct.accountNumber === acctNumber );
+    if (!account) {
+      throw "Account not found";
+    }
+    if (!account.encrypted) {
+      throw "Account not encrypted";
+    }
+    await wallet.unlockAccount(sel.walletService(getState()), passphrase, acctNumber);
+    dispatch({ type: UNLOCKACCTORWALLET_SUCCESS });
+  } catch (error) {
+    dispatch({ type: UNLOCKACCTORWALLET_FAILED, error });
+  }
+}
+
+export const LOCKACCTORWALLET_ATTEMPT = "LOCKACCTORWALLET_ATTEMPT";
+export const LOCKACCTORWALLET_FAILED = "LOCKACCTORWALLET_FAILED";
+export const LOCKACCTORWALLET_SUCCESS = "LOCKACCTORWALLET_SUCCESS";
+
+export const lockWalletOrAcct = (acctNumber) => async (dispatch, getState) => {
+  dispatch({type: LOCKACCTORWALLET_ATTEMPT });
+  try {
+    const accounts = sel.balances(getState());
+    if (!acctNumber) {
+      await wallet.lockWallet(sel.walletService(getState()));
+      dispatch({ type: LOCKACCTORWALLET_SUCCESS });
+      return;
+    }
+  
+    const account = accounts.find(acct => acct.accountNumber === acctNumber );
+    if (!account) {
+      throw "Account not found";
+    }
+    if (!account.encrypted) {
+      throw "Account not encrypted";
+    }
+    await wallet.lockAccount(sel.walletService(getState()), acctNumber);
+    dispatch({ type: LOCKACCTORWALLET_SUCCESS });
+  } catch (error) {
+    dispatch({ type: LOCKACCTORWALLET_FAILED, error });
+  }
+}

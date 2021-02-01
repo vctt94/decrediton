@@ -288,7 +288,7 @@ export const constructSendAllTransaction = (
     );
   });
 
-export const getCoinjoinOutputspByAcct = (walletService) =>
+export const getCoinjoinOutputspByAcctReq = (walletService) =>
   new Promise((ok, fail) => {
     const request = new api.GetCoinjoinOutputspByAcctRequest();
     walletService.getCoinjoinOutputspByAcct(request, (err, res) =>
@@ -458,18 +458,19 @@ export const setVspdAgendaChoices = (
     );
   });
 
-export const unlockWallet = (walletService, passphrase) =>
-  new Promise((resolve, reject) => {
-    const unlockReq = new api.UnlockWalletRequest();
-    unlockReq.setPassphrase(new Uint8Array(Buffer.from(passphrase)));
-    // Unlock wallet so we can call the request.
-    walletService.unlockWallet(unlockReq, (error) => {
-      if (error) {
-        reject(error);
-      }
-      resolve(true);
-    });
+export const unlockWallet = (walletService, passphrase) => new Promise((resolve, reject) => {
+  const unlockReq = new api.UnlockWalletRequest();
+  console.log(console.log(passphrase))
+  unlockReq.setPassphrase(new Uint8Array(Buffer.from(passphrase)));
+  // Unlock wallet so we can call the request.
+  walletService.unlockWallet(unlockReq, (error) => {
+    console.log(error)
+    if (error) {
+      reject(error);
+    }
+    resolve(true);
   });
+});
 
 export const lockWallet = (walletService) =>
   new Promise((resolve, reject) => {
@@ -482,6 +483,30 @@ export const lockWallet = (walletService) =>
       resolve(true);
     });
   });
+
+export const unlockAccount = (walletService, passphrase, acctNumber) => new Promise((resolve, reject) => {
+  const unlockReq = new api.UnlockAccountRequest();
+  unlockReq.setPassphrase(new Uint8Array(Buffer.from(passphrase)));
+  unlockReq.setAccountNumber(acctNumber);
+  // Unlock wallet so we can call the request.
+  walletService.unlockAccount(unlockReq, (error) => {
+    if (error) {
+      reject(error);
+    }
+    resolve(true);
+  });
+});
+
+export const lockAccount = (walletService, acctNumber) => new Promise((resolve, reject) => {
+  const lockReq = new api.LockWalletRequest();
+  lockReq.setAccountNumber(acctNumber);
+  walletService.lockWallet(lockReq, (error) => {
+    if (error) {
+      reject(error);
+    }
+    resolve(true);
+  });
+});
 
 export const setAccountPassphrase = (walletService, accountNumber, accountPassphrase, newAcctPassphrase, walletPassphrase) =>
 new Promise((ok, fail) => {

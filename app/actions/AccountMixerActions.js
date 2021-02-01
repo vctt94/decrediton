@@ -1,13 +1,20 @@
-import { getAccountMixerService, getDcrwalletGrpcKeyCert } from "wallet";
 import Promise from "promise";
 import * as sel from "selectors";
-import * as wallet from "wallet";
+import {
+  runAccountMixerRequest,
+  cleanPrivacyLogs,
+  getNextAccount,
+  getAccountMixerService,
+  getDcrwalletGrpcKeyCert,
+  getCoinjoinOutputspByAcctReq
+} from "wallet";
 import { getWalletCfg } from "config";
 import {
   getAcctSpendableBalance,
   getAccountsAttempt,
   getMixerAcctsSpendableBalances
 } from "./ClientActions";
+import { unlockWalletOrAcct, lockWalletOrAcct } from "./ControlActions";
 import {
   MIN_RELAY_FEE_ATOMS,
   MIN_MIX_DENOMINATION_ATOMS,
@@ -92,10 +99,10 @@ export const runAccountMixer = ({
   new Promise((resolve) => {
     dispatch({ type: RUNACCOUNTMIXER_ATTEMPT });
     const runMixerAsync = async () => {
-      const mixerStreamer = await wallet.runAccountMixerRequest(
+      await dispatch(unlockWalletOrAcct(passphrase));
+      const mixerStreamer = await runAccountMixerRequest(
         sel.accountMixerService(getState()),
         {
-          passphrase,
           mixedAccount,
           mixedAccountBranch,
           changeAccount,
@@ -138,17 +145,17 @@ export const STOPMIXER_FAILED = "STOPMIXER_FAILED";
 export const STOPMIXER_SUCCESS = "STOPMIXER_SUCCESS";
 
 export const stopAccountMixer = (cleanLogs) => {
-  return (dispatch, getState) => {
+  return async (dispatch, getState) => {
     const { mixerStreamer } = getState().grpc;
     // clean logs if needed.
     if (cleanLogs) {
-      wallet.cleanPrivacyLogs();
+      cleanPrivacyLogs();
     }
     if (!mixerStreamer) return;
     dispatch({ type: STOPMIXER_ATTEMPT });
     try {
       mixerStreamer.cancel();
-      wallet.lockWallet(sel.walletService(getState()));
+      await dispatch(lockWalletOrAcct());
       dispatch({ type: STOPMIXER_SUCCESS });
     } catch (error) {
       dispatch({ type: STOPMIXER_FAILED, error });
@@ -170,7 +177,7 @@ export const createNeededAccounts = (
   const walletService = sel.walletService(getState());
 
   const createAccount = (pass, name) =>
-    wallet.getNextAccount(walletService, pass, name);
+    getNextAccount(walletService, pass, name);
 
   try {
     const mixedAccount = await createAccount(passphrase, mixedAccountName);
@@ -229,8 +236,7 @@ export const setCoinjoinCfg = ({ mixedNumber, changeNumber }) => (
 export const getCoinjoinOutputspByAcct = () => (dispatch, getState) =>
   new Promise((resolve, reject) => {
     const { balances, walletService } = getState().grpc;
-    wallet
-      .getCoinjoinOutputspByAcct(walletService)
+    getCoinjoinOutputspByAcctReq(walletService)
       .then((response) => {
         const coinjoinSumByAcctResp =
           response.wrappers_ && response.wrappers_[1];
