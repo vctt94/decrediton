@@ -531,8 +531,8 @@ export function ticketBuyerCancel() {
     if (ticketBuyerCall) {
       dispatch({ type: STOPTICKETBUYER_ATTEMPT });
       wallet.lockWallet(sel.walletService(getState()));
-      const acctNumber = account.encrypted ? account.value : null;
       ticketBuyerCall.cancel();
+      const acctNumber = account.encrypted ? account.value : null;
       await dispatch(lockWalletOrAcct(acctNumber));
       dispatch({ type: STOPTICKETBUYER_ATTEMPT });
     }
@@ -860,50 +860,57 @@ export const startTicketBuyerV2Attempt = (
   account,
   balanceToMaintain,
   stakepool
-) => (dispatch, getState) => {
+) => async (dispatch, getState) => {
   const request = new RunTicketBuyerRequest();
   request.setBalanceToMaintain(balanceToMaintain);
   request.setAccount(account.value);
   request.setVotingAccount(account.value);
-  request.setPassphrase(new Uint8Array(Buffer.from(passphrase)));
   request.setVotingAddress(stakepool.TicketAddress);
   const ticketBuyerConfig = { stakepool, balanceToMaintain, account };
-  return new Promise(() => {
-    const { ticketBuyerService } = getState().grpc;
-    dispatch({ ticketBuyerConfig, type: STARTTICKETBUYERV2_ATTEMPT });
-    const ticketBuyer = ticketBuyerService.runTicketBuyer(request);
-    ticketBuyer.on("data", function (response) {
-      // No expected responses but log in case.
-      console.log(response);
-    });
-    ticketBuyer.on("end", function (response) {
-      // No expected response in end but log in case.
-      console.log(response);
-    });
-    ticketBuyer.on("error", function (status) {
-      status = status + "";
-      if (status.indexOf("Cancelled") < 0) {
-        if (status.indexOf("invalid passphrase") > 0) {
-          dispatch({ error: status, type: STARTTICKETBUYERV2_FAILED });
-        }
-      } else {
-        dispatch({ type: STOPTICKETBUYERV2_SUCCESS });
+  const { ticketBuyerService } = getState().grpc;
+  dispatch({ ticketBuyerConfig, type: STARTTICKETBUYERV2_ATTEMPT });
+  const accountNum = account.encrypted ? account.value : null;
+  const error = await dispatch(unlockWalletOrAcct(passphrase, accountNum));
+  if (error) {
+    dispatch({ error, type: STARTTICKETBUYERV2_FAILED });
+    return error;
+  }
+
+  const ticketBuyer = ticketBuyerService.runTicketBuyer(request);
+  ticketBuyer.on("data", function (response) {
+    // No expected responses but log in case.
+    console.log(response);
+  });
+  ticketBuyer.on("end", function (response) {
+    // No expected response in end but log in case.
+    console.log(response);
+  });
+  ticketBuyer.on("error", function (status) {
+    status = status + "";
+    if (status.indexOf("Cancelled") < 0) {
+      if (status.indexOf("invalid passphrase") > 0) {
+        dispatch({ error: status, type: STARTTICKETBUYERV2_FAILED });
       }
-    });
-    dispatch({
-      ticketBuyerCall: ticketBuyer,
-      type: STARTTICKETBUYERV2_SUCCESS
-    });
+    } else {
+      dispatch({ type: STOPTICKETBUYERV2_SUCCESS });
+    }
+  });
+  dispatch({
+    ticketBuyerCall: ticketBuyer,
+    ticketBuyerAcct: account,
+    type: STARTTICKETBUYERV2_SUCCESS
   });
 };
 
 export function ticketBuyerV2Cancel() {
-  return (dispatch, getState) => {
-    const { ticketBuyerCall } = getState().control;
+  return async (dispatch, getState) => {
+    const { ticketBuyerCall, ticketBuyerAcct } = getState().control;
     if (!ticketBuyerCall) return;
     if (ticketBuyerCall) {
       dispatch({ type: STOPTICKETBUYERV2_ATTEMPT });
       ticketBuyerCall.cancel();
+      const acctNumber = ticketBuyerAcct.encrypted ? ticketBuyerAcct.value : null;
+      await dispatch(lockWalletOrAcct(acctNumber));
     }
   };
 }

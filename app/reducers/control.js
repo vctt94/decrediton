@@ -460,7 +460,8 @@ export default function control(state = {}, action) {
         startTicketBuyerAttempt: false,
         startTicketBuyerError: null,
         startAutoBuyerResponse: true,
-        ticketBuyerCall: action.ticketBuyerCall
+        ticketBuyerCall: action.ticketBuyerCall,
+        ticketBuyerAcct: action.ticketBuyerAcct
       };
     case STOPTICKETBUYERV2_ATTEMPT:
       return { ...state };
