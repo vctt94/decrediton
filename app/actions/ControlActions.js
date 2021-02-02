@@ -295,7 +295,7 @@ export const CREATE_UNSIGNEDTICKETS_SUCCESS = "CREATE_UNSIGNEDTICKETS_SUCCESS";
 // TODO move purchaseTicketsAttempt to TransactionActions
 export const purchaseTicketsAttempt = (
   passphrase,
-  accountNum,
+  account,
   spendLimit,
   requiredConf,
   numTickets,
@@ -322,9 +322,9 @@ export const purchaseTicketsAttempt = (
       );
     }
 
+    // If we need to sign the tx, we re-import the script to ensure the
+    // wallet will control the ticket. And unlock the wallet
     if (!dontSignTx) {
-      // If we need to sign the tx, we re-import the script to ensure the
-      // wallet will control the ticket.
       const importScriptResponse = await dispatch(
         importScriptAttempt(stakepool.Script)
       );
@@ -333,12 +333,16 @@ export const purchaseTicketsAttempt = (
           "Trying to use a ticket address not corresponding to script"
         );
       }
+      const accountNum = account.encrypted ? account.value : null;
+      const error = await dispatch(unlockWalletOrAcct(passphrase, accountNum));
+      if (error) {
+        return dispatch({ error, type: PURCHASETICKETS_FAILED });
+      }
     }
 
     const purchaseTicketsResponse = await wallet.purchaseTickets(
       walletService,
-      passphrase,
-      accountNum,
+      account,
       spendLimit,
       requiredConf,
       numTickets,
@@ -354,6 +358,7 @@ export const purchaseTicketsAttempt = (
         type: CREATE_UNSIGNEDTICKETS_SUCCESS
       });
     }
+    await dispatch(lockWalletOrAcct(accountNum));
     dispatch({ purchaseTicketsResponse, type: PURCHASETICKETS_SUCCESS });
   } catch (error) {
     dispatch({ error, type: PURCHASETICKETS_FAILED });
@@ -362,7 +367,7 @@ export const purchaseTicketsAttempt = (
 
 export const newPurchaseTicketsAttempt = (
   passphrase,
-  accountNum,
+  account,
   numTickets,
   vsp
 ) => async (dispatch, getState) => {
@@ -377,11 +382,14 @@ export const newPurchaseTicketsAttempt = (
       csppPort: sel.getCsppPort(getState()),
       mixedAcctBranch: sel.getMixedAccountBranch(getState())
     };
-
+    const accountNum = account.encrypted ? account.value : null;
+    const error = await dispatch(unlockWalletOrAcct(passphrase, accountNum));
+    if (error) {
+      return dispatch({ error, type: PURCHASETICKETS_FAILED });
+    }
     const purchaseTicketsResponse = await wallet.purchaseTicketsV3(
       walletService,
-      passphrase,
-      accountNum,
+      account,
       numTickets,
       !dontSignTx,
       vsp,
@@ -404,6 +412,7 @@ export const newPurchaseTicketsAttempt = (
       });
     } else {
       dispatch({ purchaseTicketsResponse, type: PURCHASETICKETS_SUCCESS });
+      await dispatch(lockWalletOrAcct(accountNum));
     }
   } catch (error) {
     if (String(error).indexOf("insufficient balance") > 0) {
@@ -416,7 +425,7 @@ export const newPurchaseTicketsAttempt = (
       if (unspentOutputs.length < numTickets * 2) {
         // check if amount is indeed insufficient
         const ticketPrice = sel.ticketPrice(getState());
-        if (accountNum.spendable > ticketPrice * numTickets) {
+        if (account.spendable > ticketPrice * numTickets) {
           return dispatch({
             error: `Not enough utxo. Need to break the input so one can be reserved
             for paying the fee.`,

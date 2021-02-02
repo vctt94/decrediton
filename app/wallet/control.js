@@ -118,7 +118,6 @@ export const publishTransaction = (walletService, tx) =>
 
 export const purchaseTickets = (
   walletService,
-  passphrase,
   accountNum,
   spendLimit,
   requiredConf,
@@ -139,7 +138,6 @@ export const purchaseTickets = (
       );
     }
     const request = new api.PurchaseTicketsRequest();
-    signTx && request.setPassphrase(new Uint8Array(Buffer.from(passphrase)));
     request.setAccount(accountNum);
     request.setChangeAccount(accountNum.value);
     request.setSpendLimit(spendLimit);
@@ -159,7 +157,6 @@ export const purchaseTickets = (
 
 export const purchaseTicketsV3 = (
   walletService,
-  passphrase,
   accountNum,
   numTickets,
   signTx,
