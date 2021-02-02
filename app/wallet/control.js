@@ -517,3 +517,46 @@ new Promise((ok, fail) => {
   }
   walletService.setAccountPassphrase(request, (err, res) => err ? fail(err) : ok({ ...res }));
 });
+
+export const startTicketAutoBuyerV3 = (
+  ticketBuyerService,
+  {
+    mixedAccount,
+    mixedAcctBranch,
+    changeAccount,
+    csppServer,
+    balanceToMaintain,
+    accountNum,
+    pubkey,
+    host
+  }
+) =>
+  new Promise((ok) => {
+    const request = new api.RunTicketBuyerRequest();
+    if (mixedAccount && changeAccount) {
+      if (
+        !mixedAccount ||
+        !changeAccount ||
+        !csppServer ||
+        !csppPort ||
+        typeof mixedAcctBranch === "undefined"
+      ) {
+        throw "missing cspp argument";
+      }
+
+      request.setMixedAccount(mixedAccount);
+      request.setMixedSplitAccount(mixedAccount);
+      request.setChangeAccount(changeAccount);
+      request.setCsppServer(`${csppServer}:${csppPort}`);
+      request.setMixedAccountBranch(mixedAcctBranch);
+    }
+
+    request.setVspPubkey(pubkey);
+    request.setVspHost("https://" + host);
+    request.setBalanceToMaintain(balanceToMaintain);
+    request.setAccount(accountNum);
+    request.setVotingAccount(accountNum);
+  
+    const mixer = ticketBuyerService.runTicketBuyer(request);
+    ok(mixer);
+  });

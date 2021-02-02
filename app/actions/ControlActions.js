@@ -468,82 +468,73 @@ export const startTicketBuyerV3Attempt = (
   account,
   balanceToMaintain,
   vsp
-) => (dispatch, getState) => {
-  const request = new RunTicketBuyerRequest();
+) => async (dispatch, getState) => {
   const mixedAccount = sel.getMixedAccount(getState());
   const changeAccount = sel.getChangeAccount(getState());
   const csppServer = sel.getCsppServer(getState());
   const csppPort = sel.getCsppPort(getState());
   const mixedAcctBranch = sel.getMixedAccountBranch(getState());
-
-  if (mixedAccount && changeAccount) {
-    if (
-      !mixedAccount ||
-      !changeAccount ||
-      !csppServer ||
-      !csppPort ||
-      typeof mixedAcctBranch === "undefined"
-    ) {
-      throw "missing cspp argument";
-    }
-    request.setMixedAccount(mixedAccount);
-    request.setMixedSplitAccount(mixedAccount);
-    request.setChangeAccount(changeAccount);
-    request.setCsppServer(`${csppServer}:${csppPort}`);
-    request.setMixedAccountBranch(mixedAcctBranch);
-  }
-
-  request.setBalanceToMaintain(balanceToMaintain);
-  request.setAccount(account.value);
-  request.setVotingAccount(account.value);
-  request.setPassphrase(new Uint8Array(Buffer.from(passphrase)));
-  const { pubkey, host } = vsp;
-  request.setVspPubkey(pubkey);
-  request.setVspHost("https://" + host);
   const ticketBuyerConfig = { vsp, balanceToMaintain, account };
-  return new Promise(() => {
-    const { ticketBuyerService } = getState().grpc;
-    dispatch({ ticketBuyerConfig, type: STARTTICKETBUYERV3_ATTEMPT });
-    const ticketBuyer = ticketBuyerService.runTicketBuyer(request);
-    ticketBuyer.on("data", function (response) {
-      // No expected responses but log in case.
-      console.log(response);
-    });
-    ticketBuyer.on("end", function (response) {
-      // No expected response in end but log in case.
-      console.log(response);
-    });
-    ticketBuyer.on("error", function (status) {
-      status = status + "";
-      if (status.indexOf("Cancelled") < 0) {
-        if (status.indexOf("invalid passphrase") > 0) {
-          dispatch({ error: status, type: STARTTICKETBUYERV3_FAILED });
-        }
-      } else {
-        dispatch({ type: STOPTICKETBUYER_SUCCESS });
-      }
-    });
-    // update used vsps
-    dispatch(updateUsedVSPs(vsp));
 
-    dispatch({
-      ticketBuyerCall: ticketBuyer,
-      vsp,
-      balanceToMaintain,
-      account,
-      type: STARTTICKETBUYERV3_SUCCESS
-    });
+  const { ticketBuyerService } = getState().grpc;
+  dispatch({ ticketBuyerConfig, type: STARTTICKETBUYERV3_ATTEMPT });
+  const accountNum = account.encrypted ? account.value : null;
+  const error = await dispatch(unlockWalletOrAcct(passphrase, accountNum));
+  if (error) {
+    dispatch({ error, type: STARTTICKETBUYERV3_FAILED });
+    return error;
+  }
+  const ticketBuyer = await wallet.startTicketAutoBuyerV3(ticketBuyerService, {
+    mixedAccount,
+    mixedAcctBranch,
+    changeAccount,
+    csppServer: `${csppServer}:${csppPort}`,
+    balanceToMaintain,
+    accountNum,
+    pubkey: vsp.pubkey,
+    host: vsp.host
   });
-};
+  ticketBuyer.on("data", function (response) {
+    // No expected responses but log in case.
+    console.log(response);
+  });
+  ticketBuyer.on("end", function (response) {
+    // No expected response in end but log in case.
+    console.log(response);
+  });
+  ticketBuyer.on("error", function (status) {
+    status = status + "";
+    if (status.indexOf("Cancelled") < 0) {
+      if (status.indexOf("invalid passphrase") > 0) {
+        dispatch({ error: status, type: STARTTICKETBUYERV3_FAILED });
+      }
+    } else {
+      dispatch({ type: STOPTICKETBUYER_SUCCESS });
+    }
+  });
+  // update used vsps
+  dispatch(updateUsedVSPs(vsp));
+  dispatch({
+    ticketBuyerCall: ticketBuyer,
+    vsp,
+    balanceToMaintain,
+    account,
+    type: STARTTICKETBUYERV3_SUCCESS
+  });
+  return ticketBuyer;
+}
 
 export function ticketBuyerCancel() {
-  return (dispatch, getState) => {
-    const { ticketBuyerCall } = getState().vsp;
+  return async (dispatch, getState) => {
+    const { ticketBuyerCall, account } = getState().vsp;
     if (!ticketBuyerCall) return;
     if (ticketBuyerCall) {
       dispatch({ type: STOPTICKETBUYER_ATTEMPT });
       wallet.lockWallet(sel.walletService(getState()));
+      const acctNumber = account.encrypted ? account.value : null;
       ticketBuyerCall.cancel();
+      await dispatch(lockWalletOrAcct(acctNumber));
+      dispatch({ type: STOPTICKETBUYER_ATTEMPT });
     }
   };
 }
@@ -978,7 +969,7 @@ export const unlockWalletOrAcct = (passphrase, acctNumber) => async (dispatch, g
       dispatch({ type: UNLOCKACCTORWALLET_SUCCESS });
       return null;
     }
-  
+
     const account = accounts.find(acct => acct.accountNumber === acctNumber );
     if (!account) {
       throw "Account not found";

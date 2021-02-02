@@ -29,7 +29,8 @@ import {
   VERIFYMESSAGE_FAILED,
   PUBLISHUNMINEDTRANSACTIONS_SUCCESS,
   PUBLISHUNMINEDTRANSACTIONS_FAILED,
-  GETACCOUNTEXTENDEDKEY_FAILED
+  GETACCOUNTEXTENDEDKEY_FAILED,
+  STARTTICKETBUYERV3_FAILED
 } from "../actions/ControlActions";
 import {
   UPDATESTAKEPOOLCONFIG_SUCCESS,
@@ -573,6 +574,10 @@ const messages = defineMessages({
   SETVSPDVOTECHOICE_FAILED: {
     id: "set.vspdvote.failed",
     defaultMessage: "Set vspd vote choices failed: {originalError}"
+  },
+  STARTTICKETBUYERV3_FAILED: {
+    id: "vsp.runautobuyer.failed",
+    defaultMessage: "{originalError}"
   }
 });
 
@@ -781,6 +786,7 @@ export default function snackbar(state = {}, action) {
     case PROCESSMANAGEDTICKETS_FAILED:
     case SETVOTECHOICES_FAILED:
     case SETVSPDVOTECHOICE_FAILED:
+    case STARTTICKETBUYERV3_FAILED:
       type = "Error";
       if (
         action.error &&
