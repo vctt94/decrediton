@@ -322,6 +322,7 @@ export const purchaseTicketsAttempt = (
       );
     }
 
+    let accountNum = null;
     // If we need to sign the tx, we re-import the script to ensure the
     // wallet will control the ticket. And unlock the wallet
     if (!dontSignTx) {
@@ -333,7 +334,7 @@ export const purchaseTicketsAttempt = (
           "Trying to use a ticket address not corresponding to script"
         );
       }
-      const accountNum = account.encrypted ? account.value : null;
+      accountNum = account.encrypted ? account.value : null;
       const error = await dispatch(unlockWalletOrAcct(passphrase, accountNum));
       if (error) {
         return dispatch({ error, type: PURCHASETICKETS_FAILED });
@@ -488,7 +489,8 @@ export const startTicketBuyerV3Attempt = (
     mixedAccount,
     mixedAcctBranch,
     changeAccount,
-    csppServer: `${csppServer}:${csppPort}`,
+    csppServer,
+    csppPort,
     balanceToMaintain,
     accountNum,
     pubkey: vsp.pubkey,
@@ -522,7 +524,7 @@ export const startTicketBuyerV3Attempt = (
     type: STARTTICKETBUYERV3_SUCCESS
   });
   return ticketBuyer;
-}
+};
 
 export function ticketBuyerCancel() {
   return async (dispatch, getState) => {
@@ -965,7 +967,7 @@ export const UNLOCKACCTORWALLET_FAILED = "UNLOCKACCTORWALLET_FAILED";
 export const UNLOCKACCTORWALLET_SUCCESS = "UNLOCKACCTORWALLET_SUCCESS";
 
 // unlockWalletOrAcct unlocks the wallet if no account number informed and an
-// account otherwise. 
+// account otherwise.
 export const unlockWalletOrAcct = (passphrase, acctNumber) => async (dispatch, getState) => {
   dispatch({ type: UNLOCKACCTORWALLET_ATTEMPT });
   try {
@@ -991,14 +993,14 @@ export const unlockWalletOrAcct = (passphrase, acctNumber) => async (dispatch, g
     dispatch({ type: UNLOCKACCTORWALLET_FAILED, error });
     return error;
   }
-}
+};
 
 export const LOCKACCTORWALLET_ATTEMPT = "LOCKACCTORWALLET_ATTEMPT";
 export const LOCKACCTORWALLET_FAILED = "LOCKACCTORWALLET_FAILED";
 export const LOCKACCTORWALLET_SUCCESS = "LOCKACCTORWALLET_SUCCESS";
 
 export const lockWalletOrAcct = (acctNumber) => async (dispatch, getState) => {
-  dispatch({type: LOCKACCTORWALLET_ATTEMPT });
+  dispatch({ type: LOCKACCTORWALLET_ATTEMPT });
   try {
     const accounts = sel.balances(getState());
     if (!acctNumber) {
@@ -1006,7 +1008,7 @@ export const lockWalletOrAcct = (acctNumber) => async (dispatch, getState) => {
       dispatch({ type: LOCKACCTORWALLET_SUCCESS });
       return;
     }
-  
+
     const account = accounts.find(acct => acct.accountNumber === acctNumber );
     if (!account) {
       throw "Account not found";
@@ -1019,4 +1021,4 @@ export const lockWalletOrAcct = (acctNumber) => async (dispatch, getState) => {
   } catch (error) {
     dispatch({ type: LOCKACCTORWALLET_FAILED, error });
   }
-}
+};
