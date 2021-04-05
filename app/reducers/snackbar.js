@@ -23,11 +23,14 @@ import {
   GETNEXTACCOUNT_FAILED,
   CHANGEPASSPHRASE_SUCCESS,
   CHANGEPASSPHRASE_FAILED,
+  SETACCOUNTPASSPHRASE_SUCCESS,
+  SETACCOUNTPASSPHRASE_FAILED,
   SIGNMESSAGE_FAILED,
   VERIFYMESSAGE_FAILED,
   PUBLISHUNMINEDTRANSACTIONS_SUCCESS,
   PUBLISHUNMINEDTRANSACTIONS_FAILED,
-  GETACCOUNTEXTENDEDKEY_FAILED
+  GETACCOUNTEXTENDEDKEY_FAILED,
+  STARTTICKETBUYERV3_FAILED
 } from "../actions/ControlActions";
 import {
   UPDATESTAKEPOOLCONFIG_SUCCESS,
@@ -261,10 +264,19 @@ const messages = defineMessages({
     id: "settings.changePassphrase",
     defaultMessage: "Successfully changed private passphrase."
   },
+  SETACCOUNTPASSPHRASE_SUCCESS: {
+    id: "settings.changeAcctPassphrase",
+    defaultMessage: "Successfully changed account passphrase."
+  },
   CHANGEPASSPHRASE_FAILED: {
     id: "settings.errors.changePassphraseFailed",
     defaultMessage:
       "Update passphrase failed. Incorrect private passphrase, please try again."
+  },
+  SETACCOUNTPASSPHRASE_FAILED: {
+    id: "settings.errors.setPassphraseAcctFailed",
+    defaultMessage:
+      "Update passphrase failed. Incorrect passphrase, please try again."
   },
   DAEMONCONNECTING_TIMEOUT: {
     id: "daemonSyncingTimeout.errors",
@@ -562,6 +574,10 @@ const messages = defineMessages({
   SETVSPDVOTECHOICE_FAILED: {
     id: "set.vspdvote.failed",
     defaultMessage: "Set vspd vote choices failed: {originalError}"
+  },
+  STARTTICKETBUYERV3_FAILED: {
+    id: "vsp.runautobuyer.failed",
+    defaultMessage: "{originalError}"
   }
 });
 
@@ -608,6 +624,7 @@ export default function snackbar(state = {}, action) {
     case RENAMEACCOUNT_SUCCESS:
     case GETNEXTACCOUNT_SUCCESS:
     case CHANGEPASSPHRASE_SUCCESS:
+    case SETACCOUNTPASSPHRASE_SUCCESS:
     case REVOKETICKETS_SUCCESS:
     case IMPORTSCRIPT_MANUAL_SUCCESS:
     case STARTTICKETBUYERV2_SUCCESS:
@@ -705,6 +722,7 @@ export default function snackbar(state = {}, action) {
     case RENAMEACCOUNT_FAILED:
     case GETNEXTACCOUNT_FAILED:
     case CHANGEPASSPHRASE_FAILED:
+    case SETACCOUNTPASSPHRASE_FAILED:
     case CONSTRUCTTX_FAILED:
     case SIGNTX_FAILED:
     case PUBLISHTX_FAILED:
@@ -768,6 +786,7 @@ export default function snackbar(state = {}, action) {
     case PROCESSMANAGEDTICKETS_FAILED:
     case SETVOTECHOICES_FAILED:
     case SETVSPDVOTECHOICE_FAILED:
+    case STARTTICKETBUYERV3_FAILED:
       type = "Error";
       if (
         action.error &&

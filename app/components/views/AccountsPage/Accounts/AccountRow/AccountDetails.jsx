@@ -4,6 +4,7 @@ import { Balance, CopyToClipboard } from "shared";
 import { SlateGrayButton } from "buttons";
 import style from "../Accounts.module.css";
 import { IMPORTED_ACCOUNT, DEFAULT_ACCOUNT } from "constants";
+import { ChangeAccountPassphraseButton } from "buttons";
 
 const isHidable = (account) =>
   account.accountName !== IMPORTED_ACCOUNT &&
@@ -25,7 +26,8 @@ const AccountsDetails = ({
   showAccount,
   showPubKey,
   onTogglePubkey,
-  accountExtendedKey
+  accountExtendedKey,
+  onSetAccountPassphrase
 }) => (
   <div key={`details${account.accountNumber}`}>
     <div className={style.detailsBottomColumns}>
