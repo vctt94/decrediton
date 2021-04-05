@@ -1,9 +1,9 @@
 import DefaultModal from "../Modal";
 import { FormattedMessage as T } from "react-intl";
-import style from "../Modals.module.css";
 import { classNames } from "pi-ui";
 import { PasswordInput, PassphraseModalField } from "inputs";
 import { ButtonsToolbar } from "shared";
+import style from "../Modals.module.css";
 
 const Modal = ({
   modalClassName,
@@ -16,7 +16,8 @@ const Modal = ({
   onSubmit,
   setPassPhrase,
   submitLabel,
-  isValid
+  isValid,
+  passLabel
 }) => (
   <DefaultModal
     className={classNames(style.passphrase, modalClassName)}
@@ -38,9 +39,9 @@ const Modal = ({
     </div>
     <div className={style.passphraseContent}>
       <PassphraseModalField
-        label={
+        label={ passLabel ? passLabel :
           <T id="passphraseModal.privatePassphrase" m="Private Passphrase" />
-        }>
+      }>
         <PasswordInput
           autoFocus={true}
           required

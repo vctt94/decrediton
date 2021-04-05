@@ -340,6 +340,7 @@ const SendTransaction = ({
   return (
     <Form
       {...{
+        account,
         isSendSelf,
         outputs,
         totalSpent,
